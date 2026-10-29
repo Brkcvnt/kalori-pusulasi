@@ -15,7 +15,7 @@ function save(){try{localStorage.setItem(key,JSON.stringify(state));storageOK=tr
 function goal(){return state.profile ? (+state.profile.custom||calculate(state.profile)):null;}
 $('#day').value=dateKey();$('#day').max=dateKey();
 function day(){return state.days[$('#day').value]||{target:goal(),entries:[]};}
-function num(n){return Math.round(n).toLocaleString('tr-TR');}
+function num(n){return n.toLocaleString('tr-TR',{maximumFractionDigits:1});}
 const foods=[['Yulaf ezmesi',370],['Yoğurt (sade)',61],['Süt',61],['Yumurta (haşlanmış)',155],['Tavuk göğsü (pişmiş)',165],['Pirinç (pişmiş)',130],['Bulgur (pişmiş)',83],['Elma',52],['Muz',89],['Tam buğday ekmeği',247],['Beyaz peynir',260],['Zeytinyağı',884],['Badem',579],['Mercimek çorbası',70]];
 for(const [name] of foods){const o=document.createElement('option');o.value=name;$('#foods').append(o);}
 const ff=$('#food-form'),pf=$('#profile-form');
