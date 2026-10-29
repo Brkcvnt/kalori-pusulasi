@@ -37,3 +37,21 @@ test('bundled data has real source energy, adequate coverage, and separate licen
  const off=JSON.parse(fs.readFileSync(new URL('../packaged-foods.json',import.meta.url)));assert.equal(off.license,'ODbL-1.0');assert.equal(off.products.length,3345);
  assert.ok(searchFoods(off.products.map(productFood).filter(Boolean),'ülker').length);
 });
+test('short queries stay closed; bounded results preserve ranking and stable ties',()=>{
+ const foods=['Elmalı kek','Elma suyu','Elma','Kırmızı elma','Elma'].map((name,i)=>({id:String(i),name,brand:'',original:'',code:'869000000000'+i}));
+ assert.deepEqual(searchFoods(foods,'e'),[]);
+ assert.deepEqual(searchFoods(foods,'elma',3).map(f=>f.id),['2','4','1']);
+ assert.deepEqual(searchFoods(foods,'8690000000000',1).map(f=>f.id),['0']);
+ assert.deepEqual(searchFoods(foods,'elma',0),[]);
+});
+test('repeated typing reuses catalog fields; a replacement catalog builds a fresh index',()=>{
+ let reads=0;
+ const food={id:'test',get name(){reads++;return 'Sütlü çikolata';},brand:'Ülker',original:'Milk chocolate'};
+ const catalog=[food];
+ assert.equal(searchFoods(catalog,'ulker sutlu')[0],food);
+ const initialReads=reads;
+ assert.equal(searchFoods(catalog,'milk')[0],food);
+ assert.equal(searchFoods(catalog,'cikolata')[0],food);
+ assert.equal(reads,initialReads);
+ assert.deepEqual(searchFoods([{id:'new',name:'Yoğurt'}],'sutlu'),[]);
+});
