@@ -18,6 +18,7 @@ export function setupFoodPicker({form,onChange,onError}){
    const id=revision;const refresh=new AbortController();controller=refresh;const timeout=setTimeout(()=>refresh.abort(),8000);
    setStatus('Ürünün güncel etiketi internetten kontrol ediliyor…');document.querySelector('#add-food').disabled=true;
    try{const response=await fetch(searchUrl(food.code),{signal:refresh.signal,credentials:'omit',referrerPolicy:'no-referrer'});if(!response.ok)throw Error();const live=responseFoods(await response.json())[0];if(id!==revision)return;
+    if(live&&live.id!==food.id)throw Error('Product identity mismatch');
     if(!live||live.per100===null){clear();detail.hidden=true;setStatus('Bu ürünün güncel kaynağında kalori bilgisi bulunamadı. Başka bir ürün seç.');return;}
     selected=live;input.value=live.name.slice(0,80);per100.value=live.per100;strong.textContent=live.name;p.textContent=(live.brand?live.brand+' · ':'')+live.per100.toLocaleString('tr-TR')+' kcal / 100 '+live.unit;
     setStatus('Güncel kalori internetten alındı. Yediğin miktarı gir.');onChange();
