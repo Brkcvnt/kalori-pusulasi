@@ -12,15 +12,28 @@ export function productFood(p){
  return {id:'off:'+code,code,name,brand:Array.isArray(p.brands)?p.brands.join(', '):String(p.brands||''),per100:kcal!==null&&kcal>=0&&kcal<=1000?Math.round(kcal*10)/10:null,source:'Open Food Facts',url:'https://world.openfoodfacts.org/product/'+code,unit:'g / ml',original:''};
 }
 export function localFoods(rows){return rows.map(([id,name,per100,original])=>({id:'usda:'+id,name,per100,original,brand:'',unit:'g',source:'USDA',url:'https://fdc.nal.usda.gov/food-details/'+id+'/nutrients'}));}
+// Catalog arrays are replaced after loading; normalized fields are reused while typing.
+const indexes=new WeakMap();
 export function searchFoods(foods,query,limit=30){
- const q=normalize(query),tokens=q.split(' ').filter(Boolean);
- if(!q)return [];
- return foods.map((f,index)=>{
-  if(f.code===query.trim())return {f,score:-100,index};
-  const name=normalize(f.name),all=name+' '+normalize(f.brand)+' '+normalize(f.original);
-  if(!tokens.every(t=>all.includes(t)))return null;
-  return {f,score:(name===q?-50:name.startsWith(q+' ')?-30:name.startsWith(q)?-10:0)+name.length/1000,index};
- }).filter(Boolean).sort((a,b)=>a.score-b.score||a.index-b.index).slice(0,limit).map(x=>x.f);
+ let index=indexes.get(foods);
+ if(!index){
+  index=foods.map((food,order)=>{const name=normalize(food.name);return {food,order,name,all:name+' '+normalize(food.brand)+' '+normalize(food.original)};});
+  indexes.set(foods,index);
+ }
+ const q=normalize(query),tokens=q.split(' ').filter(Boolean),barcode=query.trim();
+ if(q.length<2)return [];
+ // Keep only the best matches, avoiding a full result sort on broad queries.
+ const best=[];
+ for(const row of index){
+  const {food,name,all,order}=row;
+  const exactCode=food.code===barcode;
+  if(!exactCode&&!tokens.every(t=>all.includes(t)))continue;
+  const score=exactCode?-100:(name===q?-50:name.startsWith(q+' ')?-30:name.startsWith(q)?-10:0)+name.length/1000;
+  let at=best.findIndex(r=>score<r.score||(score===r.score&&order<r.order));
+  if(at<0)at=best.length;
+  if(at<limit){best.splice(at,0,{food,score,order});if(best.length>limit)best.pop();}
+ }
+ return best.map(row=>row.food);
 }
 const fields='code,product_name,product_name_tr,brands,nutriments';
 export function searchUrl(query){

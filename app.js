@@ -1,5 +1,5 @@
 import {calculate,total,calories,dateKey} from './core.js';
-import {setupFoodPicker} from './food-picker.js';
+import {setupFoodPicker} from './food-picker.js?v=5';
 const $=s=>document.querySelector(s), key='kalori-pusulasi-v1';
 let state={version:1,profile:null,days:{}}, timer, storageOK=true;
 function toast(text){$('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(timer);timer=setTimeout(()=>$('#toast').hidden=true,4500);}
