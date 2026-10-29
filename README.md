@@ -6,7 +6,7 @@ Türkçe, mobil uyumlu bir günlük kalori takip uygulaması. Sunucu hesabı, AP
 
 - Yaş, boy, kilo, formülde kullanılan cinsiyet ve hareket düzeyinden yaklaşık günlük enerji ihtiyacı
 - İsteğe bağlı özel kalori hedefi
-- Gram / mililitre üzerinden öğün ve besin kaydı; yaklaşık besin önerileri ve elle kalori girişi
+- Gram / mililitre üzerinden öğün ve besin kaydı; 7.793 USDA temel besini ve 3.345 Türkiye ürününden arama, otomatik kalori, marka/barkod ile çevrimiçi arama
 - Alınan kalori, hedefe kalan veya hedef üstü fark
 - Tarihe göre günlükler ve son 7 gün özeti; kaydedilmiş günlerin hedeflerini koruma
 - Kayıt silme, JSON yedek indirme ve doğrulanmış yedek geri yükleme
@@ -39,8 +39,16 @@ Mifflin–St Jeor: `10 × kg + 6.25 × cm − 5 × yaş + sabit` (erkek +5, kad�
 
 Kaynak: [Mifflin et al., AJCN 1990](https://pubmed.ncbi.nlm.nih.gov/2305711/). [Orijinal makale PDF](https://www.carnotdiet.com/Files/BMRMifflin1990.pdf).
 
-18 yaş altı, hamilelik ve emzirme için uygun değildir. Tıbbi tavsiye değildir. Besin önerileri yaklaşık genel değerlerdir; marka, hazırlama ve pişirme yöntemine göre farklılaşır. Ambalajı kontrol et; pişmiş ve çiğ ağırlığı karıştırma. Veri tabanı kapsamlı veya doğrulanmış bir besin veri tabanı değildir.
+18 yaş altı, hamilelik ve emzirme için uygun değildir. Tıbbi tavsiye değildir. Besin önerileri yaklaşık genel değerlerdir; marka, hazırlama ve pişirme yöntemine göre farklılaşır. Ambalajı kontrol et; pişmiş ve çiğ ağırlığı karıştırma. Besinler USDA ve Open Food Facts kaynaklarından gelir; tüm ürünleri kapsamaz. Open Food Facts topluluk verileri eksik veya hatalı olabilir.
 
 ## Teknoloji
 
 HTML, CSS, ES Modules, Service Worker, Web App Manifest; Node.js yerleşik test araçları. Bağımlılıksız statik mimari.
+
+## Besin verileri (1.3.0)
+
+- `usda-foods.json`: [USDA SR Legacy Nisan 2018](https://fdc.nal.usda.gov/download-datasets/) enerji (nutrient 1008), kcal/100 g. 7.793 kayıt. Asıl açıklama, FDC kimliği ve Türkçe arama karşılıkları korunur. USDA verileri kamu malıdır. Çeviriler yaklaşık arama yardımıdır.
+- `packaged-foods.json`: Open Food Facts Search-a-licious üzerinden `countries_tags:"en:turkey"` sorgusuyla 29 Ekim 2026 tarihinde indirilen 3.345 ürün; [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/). Kaynak [Open Food Facts](https://world.openfoodfacts.org/). Bu dosya ODbL kapsamındadır; uygulama kodunun lisansı ayrıdır. Eksik kalori kaydı seçilemez.
+- Canlı arama: Search-a-licious GET `/search`; barkod: OFF `/api/v2/product/{code}`. Arama açık düğmeyle yapılır; istemci en az 7 saniye aralık bırakır. Hizmetin erişimi/CORS/kotaları değişebilir; kaynak katalog internet olmadan da kullanılabilir.
+- Kişisel profil ve günlük servise gönderilmez. Yalnızca arama metni veya barkod ve normal bağlantı bilgileri (IP gibi) sağlayıcıya gider. Son seçilen en fazla 100 ürün cihazda önbelleğe alınır.
+- Eski günlükler değişmez. Kalori, ekleme anındaki değer olarak saklanır; ürün etiketi sonradan değişse bile geçmiş hesaplar değişmez.
