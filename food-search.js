@@ -1,4 +1,6 @@
-import {validMacro} from './diary.js?v=6';
+import {validMacro} from './diary.js?v=7';
+
+import {measuresFor} from './insights.js?v=7';
 
 // Nutrition parsing is independent of the UI so missing and serving-only values cannot become zero kcal.
 export const normalize=s=>String(s??'').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/[^a-z0-9]+/g,' ').trim();
@@ -15,9 +17,13 @@ export function productFood(p){
  const code=String(p.code??'');
  if(!name||!/^\d{4,14}$/.test(code))return null;
  const macros=macrosOf({protein:n.proteins_100g,carbs:n.carbohydrates_100g,fat:n.fat_100g});
- return {id:'off:'+code,code,name,macros,brand:Array.isArray(p.brands)?p.brands.join(', '):String(p.brands||''),per100:kcal!==null&&kcal>=0&&kcal<=1000?Math.round(kcal*10)/10:null,source:'Open Food Facts',url:'https://world.openfoodfacts.org/product/'+code,unit:'g / ml',original:''};
+ const extras=macrosOf({fiber:n.fiber_100g,sugars:n.sugars_100g,salt:n.salt_100g});
+ const unit=['g','ml'].includes(p.product_quantity_unit)?p.product_quantity_unit:
+  ['g','ml'].includes(p.serving_quantity_unit)?p.serving_quantity_unit:'g / ml';
+ const measures=measuresFor(p,unit);
+ return {id:'off:'+code,code,name,macros,extras,measures,brand:Array.isArray(p.brands)?p.brands.join(', '):String(p.brands||''),per100:kcal!==null&&kcal>=0&&kcal<=1000?Math.round(kcal*10)/10:null,source:'Open Food Facts',url:'https://world.openfoodfacts.org/product/'+code,unit,original:''};
 }
-export function localFoods(rows){return rows.map(([id,name,per100,original,macros])=>({id:'usda:'+id,name,per100,original,macros,brand:'',unit:'g',source:'USDA',url:'https://fdc.nal.usda.gov/food-details/'+id+'/nutrients'}));}
+export function localFoods(rows){return rows.map(([id,name,per100,original,macros,extras,measures])=>({id:'usda:'+id,name,per100,original,macros,extras:extras??undefined,measures,brand:'',unit:'g',source:'USDA',url:'https://fdc.nal.usda.gov/food-details/'+id+'/nutrients'}));}
 // Catalog arrays are replaced after loading; normalized fields are reused while typing.
 const indexes=new WeakMap();
 export function searchFoods(foods,query,limit=30){
@@ -41,7 +47,7 @@ export function searchFoods(foods,query,limit=30){
  }
  return best.map(row=>row.food);
 }
-const fields='code,product_name,product_name_tr,brands,nutriments';
+const fields='code,product_name,product_name_tr,brands,nutriments,product_quantity,product_quantity_unit,serving_quantity,serving_quantity_unit,serving_size';
 export function searchUrl(query){
  if(/^\d{8,14}$/.test(query.trim()))return 'https://world.openfoodfacts.org/api/v2/product/'+query.trim()+'?fields='+fields;
  // Quote every word: do not interpret user input as a Lucene field or wildcard query.

@@ -34,13 +34,32 @@ Android Chrome’da menüden **Uygulamayı yükle / Ana ekrana ekle**, iPhone Sa
 
 ## Veriler ve gizlilik
 
-Veriler yalnızca kullanılan tarayıcının `localStorage` alanında tutulur. Telefonda ve bilgisayarda uygulama çalışır; **otomatik cihaz eşitleme yoktur**. Taşımak için yedeği indirip diğer cihazda geri yükle. Geri yükleme mevcut kayıtları değiştirir. Yedek profil ve besin bilgilerini içerir; güvenli sakla. Tarayıcı verilerini silmek, gizli mod veya depolama sınırı kayıtların kaybolmasına yol açabilir. Düzenli yedek al. Uygulama verileri GitHub’a yüklenmez; yalnızca kaynak kodu yayınlanır.
+Veriler varsayılan olarak cihazın `localStorage` alanında tutulur. Cihazlar arası eşitleme için bir Supabase hesabı bağlanabilir. JSON yedekleriyle kayıtları cihazlar arasında elle de taşıyabilirsin. Geri yükleme mevcut kayıtları değiştirir. Yedek profil ve besin bilgilerini içerir; güvenli sakla. Tarayıcı verilerini silmek, gizli mod veya depolama sınırı kayıtların kaybolmasına yol açabilir. Düzenli yedek al. Uygulama verileri GitHub’a yüklenmez; yalnızca kaynak kodu yayınlanır.
 
 ## Öğünler ve tarifler
 
 Günlükte tekrar kullanacağın besinleri işaretle, **Öğünler ve tarifler** bölümünde ad verip kaydet. Tarif için arama sonucunu seç, miktar gir ve **Tarife malzeme ekle** düğmesini kullan. Tarifin toplam porsiyonunu belirle. Daha sonra tariften yediğin porsiyon sayısını seçip günlüğe ekleyebilirsin.
 
 **Barkod tara** düğmesi kameraya izin istediğinde açılır. Tarayıcıda kamera için HTTPS veya localhost gerekir. Kamera görüntüsü cihazda işlenir ve tarama penceresi kapanınca kamera durur. Barkodu arama kutusuna elle de girebilirsin.
+
+
+## Cihazlar arası eşitleme
+
+Eşitleme isteğe bağlıdır. Supabase bağlantısı kurulana kadar günlükler ve profil bu cihazda tutulur. Bağlantı kurulduğunda profil, günlük, favoriler, öğünler ve tarifler oturum açılan hesaba gönderilir. Tema ve bildirim ayarları cihazda kalır.
+
+1. Bir Supabase projesinde [Email Auth](https://supabase.com/docs/guides/auth/passwords) özelliğini etkinleştir. Hesap doğrulaması açıksa e-posta gönderimi ve Site URL ayarlarını yapılandır.
+2. Projenin SQL Editor ekranında [supabase-sync.sql](supabase-sync.sql) dosyasını çalıştır. Satır erişimi kullanıcının hesabıyla sınırlanır ve iki cihazın aynı sürümün üzerine yazması engellenir.
+3. **Eşitleme ve hatırlatıcı → Cihazlar arasında eşitle** bölümüne proje URL’sini ve `sb_publishable_` ile başlayan açık anahtarı gir. Hesap oluştur veya giriş yap. İki cihazda da aynı proje ve hesap bilgilerini kullan.
+4. İlk yüklemeyi onayla. İki cihaz farklı kayıtlar içerdiğinde uygulama hangi kopyayı kullanacağını sorar. İki kopyayı da tutmak için seçimden önce ilgili cihazlardan JSON yedeği al.
+
+Supabase'in proje URL’si ve açık anahtarı istemcide kullanılır. Secret key veya service role key yalnızca sunucu içindir. Oturum bilgileri bu cihazda saklanır. [Supabase API anahtarları](https://supabase.com/docs/guides/api/api-keys)
+
+## Günlük araçları
+
+- Arama alanı boşken favoriler ve son kullanılan besinler listelenir. **Önceki günün seçili öğününü kopyala** düğmesi öğün seçicisindeki öğünü seçili tarihe ekler.
+- Ölçü menüsü, kaynakta tek bir ağırlıkla belirtilen dilim, adet, porsiyon veya paketleri gösterir. Miktar cihazda gram veya mililitreye çevrilir.
+- **Kalori geçmişi** seçili günde biten 7 gün ile ondan önceki 7 günü karşılaştırır. Grafikte bir güne dokunarak günlük kaydını açabilirsin. **Excel için CSV indir** tarih aralığını ve bulunan besin değerlerini dışa aktarır.
+- Hatırlatıcı Android'de cihaz bildirim izniyle ve uygulama kapalıyken çalışabilir. Android pil ayarları zamanı geciktirebilir. Web hatırlatıcısı uygulama sayfası açık ve görünürken çalışır.
 
 ## Hesaplama
 
@@ -56,7 +75,7 @@ HTML, CSS, ES Modules, Service Worker, Web App Manifest; Node.js yerleşik test 
 
 ## Besin verileri
 
-- `usda-foods.json`: [USDA SR Legacy Nisan 2018](https://fdc.nal.usda.gov/download-datasets/) enerji (1008), protein (1003), yağ (1004) ve karbonhidrat (1005) değerleri, 100 g üzerinden. 7.793 kayıt. Asıl açıklama, FDC kimliği ve Türkçe arama karşılıkları korunur. USDA verileri kamu malıdır. Çeviriler yaklaşık arama yardımıdır.
+- `usda-foods.json`: [USDA SR Legacy Nisan 2018](https://fdc.nal.usda.gov/download-datasets/) enerji (1008), protein (1003), yağ (1004), karbonhidrat (1005), lif (1079) ve şeker (2000) değerleri, 100 g üzerinden. 7.793 kayıt. Asıl açıklama, FDC kimliği ve Türkçe arama karşılıkları korunur. USDA verileri kamu malıdır. Çeviriler yaklaşık arama yardımıdır.
 - `packaged-foods.json`: Open Food Facts Search-a-licious üzerinden `countries_tags:"en:turkey"` sorgusuyla 29 Ekim 2026 tarihinde indirilen 3.345 ürün; [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/). Kaynak [Open Food Facts](https://world.openfoodfacts.org/). Bu dosya ODbL kapsamındadır; uygulama kodunun lisansı ayrıdır. Eksik kalori kaydı seçilemez.
 - Canlı arama: Search-a-licious GET `/search`; barkod: OFF `/api/v2/product/{code}`. Arama açık düğmeyle yapılır; istemci en az 7 saniye aralık bırakır. Hizmetin erişimi/CORS/kotaları değişebilir; kaynak katalog internet olmadan da kullanılabilir.
 - Kişisel profil ve günlük servise gönderilmez. Yalnızca arama metni veya barkod ve normal bağlantı bilgileri (IP gibi) sağlayıcıya gider. Son seçilen en fazla 100 ürün cihazda önbelleğe alınır.

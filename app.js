@@ -1,9 +1,13 @@
 import {calculate,total,calories,dateKey} from './core.js';
-import {setupFoodPicker} from './food-picker.js?v=6';
-import {meals,nutrients,validateEntry,validateCollection,scaleEntries,macroTotals,historyDays} from './diary.js?v=6';
-import {setupBarcodeScanner} from './barcode.js?v=6';
+import {setupFoodPicker} from './food-picker.js?v=7';
+import {meals,nutrients,validateEntry,validateCollection,scaleEntries,macroTotals,historyDays} from './diary.js?v=7';
+import {setupBarcodeScanner} from './barcode.js?v=7';
+import {extraNutrients,toBaseAmount,periodSummary,dateOffset,diaryCsv,datedMeal,withAmount} from './insights.js?v=7';
+import {setupSync} from './sync.js?v=7';
+import {setupReminder} from './reminder.js?v=7';
 const $=s=>document.querySelector(s), key='kalori-pusulasi-v1';
 let state={version:1,profile:null,days:{}}, timer, storageOK=true;
+let reminderUpdate=()=>{},syncSchedule=()=>{};
 function toast(text){$('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(timer);timer=setTimeout(()=>$('#toast').hidden=true,4500);}
 try{const saved=localStorage.getItem(key);if(saved)state=validate(JSON.parse(saved));}catch{storageOK=false;setTimeout(()=>toast('Kayıtlar okunamadı. Yedek al; tarayıcı depolamasını kontrol et.'),100);}
 function validate(s){
@@ -14,26 +18,98 @@ function validate(s){
   v.entries.forEach(validateEntry);
  }
  if(s.collections!==undefined)validateCollection(s.collections);
+ if(s.favorites!==undefined){
+  if(!Array.isArray(s.favorites)||s.favorites.length>100)throw Error('Favori listesi geçersiz.');
+  s.favorites.forEach(validateEntry);
+ }
  return s;
 }
-function save(){try{localStorage.setItem(key,JSON.stringify(state));storageOK=true;$('#save-status').textContent='✓ Bu tarayıcıya kaydedildi';return true;}catch{storageOK=false;$('#save-status').textContent='Kaydedilemedi · Yedek indir';toast('Cihaza kaydedilemedi. Kaybetmemek için yedeğini indir.');return false;}}
+function save(){try{localStorage.setItem(key,JSON.stringify(state));storageOK=true;$('#save-status').textContent='✓ Bu tarayıcıya kaydedildi';reminderUpdate();syncSchedule();return true;}catch{storageOK=false;$('#save-status').textContent='Kaydedilemedi · Yedek indir';toast('Cihaza kaydedilemedi. Kaybetmemek için yedeğini indir.');return false;}}
 function goal(){return state.profile ? (+state.profile.custom||calculate(state.profile)):null;}
 $('#day').value=dateKey();$('#day').max=dateKey();
 function day(){return state.days[$('#day').value]||{target:goal(),entries:[]};}
 function num(n){return n.toLocaleString('tr-TR',{maximumFractionDigits:1});}
 const ff=$('#food-form'),pf=$('#profile-form');
-function preview(){try{if(ff.elements.per100.value==='')throw Error();$('#food-preview').textContent=num(calories(+ff.elements.per100.value,+ff.elements.grams.value))+' kcal';}catch{$('#food-preview').textContent='— kcal';}}
-const picker=setupFoodPicker({form:ff,onChange:preview,onError:toast});
+
+const favorite=$('#favorite-food'),measure=ff.elements.measure,quantity=ff.elements.grams;
+const measures=new Map();
+let pickedId;
+function sourceFood(entry,quickLabel){
+ const id=entry.sourceId;
+ if(typeof id!=='string'||!/^(usda:\d+|off:\d{4,14})$/.test(id))return null;
+ const [prefix,code]=id.split(':');
+ return {id,code:prefix==='off'?code:undefined,name:entry.name,brand:entry.brand,
+  per100:entry.per100,unit:entry.unit||'g / ml',macros:entry.macros,extras:entry.extras,measures:entry.measures,
+  source:prefix==='off'?'Open Food Facts':'USDA',
+  url:prefix==='off'?'https://world.openfoodfacts.org/product/'+code:'https://fdc.nal.usda.gov/food-details/'+code+'/nutrients',
+  quickLabel};
+}
+function quickFoods(){
+ const items=new Map();
+ function add(entry,label){
+  const food=sourceFood(entry,label);
+  if(food&&!items.has(food.id))items.set(food.id,food);
+ }
+ for(const entry of state.favorites??[])add(entry,'★ Favori');
+ for(const date of Object.keys(state.days).sort().reverse()){
+  const entries=state.days[date].entries;
+  for(let i=entries.length-1;i>=0&&items.size<Math.max(12,(state.favorites?.length??0)+6);i--)add(entries[i],'Son kullanılan');
+  if(items.size>=Math.max(12,(state.favorites?.length??0)+6))break;
+ }
+ return [...items.values()];
+}
+function preview(){
+ try{
+  if(ff.elements.per100.value==='')throw Error();
+  $('#food-preview').textContent=num(calories(+ff.elements.per100.value,toBaseAmount(+quantity.value,measures.get(measure.value))))+' kcal';
+ }catch{$('#food-preview').textContent='— kcal';}
+}
+function updatePickedFood(food){
+ const active=food?.id===pickedId?measure.value:'';
+ pickedId=food?.id;
+ const unit=food?.unit??'g / ml';
+ measures.clear();
+ measures.set('',1);
+ for(const [name,amount] of Object.entries(food?.measures??{}))measures.set(name,amount);
+ measure.replaceChildren(...[...measures].map(([name,amount])=>new Option(name?name+' ('+num(amount)+' '+unit+')':unit,name)));
+ measure.value=measures.has(active)?active:'';
+ $('#measure-field').hidden=measures.size===1;
+ $('#amount-label').textContent=measure.value?'Miktar ('+measure.value.toLocaleLowerCase('tr-TR')+')':'Miktar ('+unit+')';
+ const starred=(state.favorites??[]).some(entry=>entry.sourceId===pickedId);
+ favorite.hidden=!food;
+ favorite.setAttribute('aria-pressed',String(starred));
+ favorite.textContent=starred?'★ Favorilerden çıkar':'☆ Favorilere ekle';
+ preview();
+}
+const picker=setupFoodPicker({form:ff,onChange:updatePickedFood,onError:toast,getQuickFoods:quickFoods});
 ff.addEventListener('input',preview);
+measure.onchange=()=>{
+ quantity.value=measure.value?'1':'100';
+ updatePickedFood(picker.getSelected());
+};
+favorite.onclick=()=>{
+ const food=picker.getSelected();
+ if(!food)return;
+ const index=(state.favorites??[]).findIndex(entry=>entry.sourceId===food.id);
+ if(index>=0)state.favorites.splice(index,1);
+ else{
+  if((state.favorites?.length??0)>=100){toast('En fazla 100 besin favorilere eklenebilir.');return;}
+  (state.favorites??=[]).push({id:crypto.randomUUID(),name:food.name.slice(0,80),meal:meals[0],grams:100,
+   per100:food.per100,kcal:calories(food.per100,100),sourceId:food.id,brand:food.brand,unit:food.unit,
+   macros:food.macros,extras:food.extras,measures:food.measures});
+ }
+ save();
+ updatePickedFood(food);
+};
 function selectedEntry(){
  const food=picker.getSelected();
  if(!food||food.per100===null)throw Error('Önce sonuçlardan bir besin seç.');
  const name=ff.elements.name.value.trim();
  if(!name||name!==food.name.slice(0,80))throw Error('Besini sonuçlardan yeniden seç.');
  if(!ff.elements.grams.reportValidity())return null;
- const grams=+ff.elements.grams.value,per100=food.per100;
+ const grams=toBaseAmount(+quantity.value,measures.get(measure.value)),per100=food.per100;
  return {id:crypto.randomUUID(),name,meal:ff.elements.meal.value,grams,per100,kcal:calories(per100,grams),
-  source:food.source,sourceId:food.id,unit:food.unit,brand:food.brand,macros:food.macros};
+  source:food.source,sourceId:food.id,unit:food.unit,brand:food.brand,macros:food.macros,extras:food.extras,measures:food.measures};
 }
 function resetFoodForm(){
  picker.remember();
@@ -79,6 +155,49 @@ const editDialog=$('#edit-dialog'),editForm=$('#edit-form'),collectionForm=$('#c
 let editId,editDate;
 const checkedEntries=new Set();
 const recipeDraft=[];
+
+const copyMeal=$('#copy-meal');
+function updateCopyMeal(){
+ const meal=ff.elements.meal.value;
+ const entries=datedMeal(state.days,$('#day').value,meal);
+ copyMeal.disabled=!entries.length;
+ $('#copy-meal-note').textContent=entries.length?meal+' · '+entries.length+' besin kopyalanabilir.':'Önceki gün '+meal.toLocaleLowerCase('tr-TR')+' kaydı yok.';
+}
+ff.elements.meal.addEventListener('change',updateCopyMeal);
+copyMeal.onclick=()=>{
+ const entries=datedMeal(state.days,$('#day').value,ff.elements.meal.value);
+ const record=day();
+ if(!entries.length)return;
+ if(record.entries.length+entries.length>10000){toast('Bu gün için kayıt sınırına ulaştın.');return;}
+ record.entries.push(...entries.map(entry=>({...entry,id:crypto.randomUUID()})));
+ state.days[$('#day').value]=record;
+ const ok=save();
+ render();
+ if(ok)toast('Önceki günün öğünü kopyalandı.');
+};
+
+let editingRecipe;
+function endRecipeEdit(){
+ editingRecipe=undefined;
+ recipeDraft.length=0;
+ checkedEntries.clear();
+ collectionForm.elements.type.disabled=false;
+ collectionForm.reset();
+}
+function startRecipeEdit(item){
+ if(recipeDraft.length&&!confirm('Açık tarif taslağı bu tarifle değiştirilsin mi?'))return;
+ editingRecipe=item.id;
+ checkedEntries.clear();
+ recipeDraft.splice(0,recipeDraft.length,...item.entries.map(entry=>({...entry})));
+ collectionForm.elements.type.value='recipe';
+ collectionForm.elements.type.disabled=true;
+ collectionForm.elements.name.value=item.name;
+ collectionForm.elements.servings.value=item.servings;
+ renderEntries(day());
+ collectionForm.elements.name.focus();
+}
+$('#cancel-recipe-edit').onclick=()=>{endRecipeEdit();renderEntries(day());};
+
 const chooseMeal=(select,value)=>{
  select.replaceChildren(...meals.map(meal=>new Option(meal,meal)));
  select.value=value;
@@ -115,13 +234,35 @@ function updateCollectionForm(){
  collectionForm.elements.servings.disabled=!recipe;
  const count=checkedEntries.size+(recipe?recipeDraft.length:0);
  $('#save-collection').disabled=!count;
+ $('#save-collection').textContent=editingRecipe?'Tarif değişikliklerini kaydet':'Seçimi kaydet';
+ $('#cancel-recipe-edit').hidden=!editingRecipe;
  $('#collection-count').textContent=count+' besin seçildi';
  $('#recipe-draft').hidden=!recipe||!recipeDraft.length;
  const list=$('#recipe-ingredients');
  list.replaceChildren();
  for(const [index,entry] of recipeDraft.entries()){
   const row=document.createElement('li');
-  row.textContent=entry.name+' · '+num(entry.grams)+' '+entry.unit+' · '+num(entry.kcal)+' kcal';
+
+  row.className='recipe-ingredient';
+  const name=document.createElement('span');
+  name.textContent=entry.name;
+  const label=document.createElement('label');
+  label.textContent=entry.unit||'g / ml';
+  const amount=document.createElement('input');
+  amount.type='number';amount.min='0.001';amount.max='10000';amount.step='any';amount.required=true;
+  amount.setAttribute('form','collection-form');
+  amount.disabled=!recipe;
+  amount.setAttribute('aria-label',entry.name+' miktarı');
+  amount.value=entry.grams;
+  const energy=document.createElement('small');
+  energy.textContent=num(entry.kcal)+' kcal';
+  amount.oninput=()=>{
+   if(!amount.validity.valid){energy.textContent='— kcal';return;}
+   recipeDraft[index]=withAmount(entry,+amount.value);
+   energy.textContent=num(recipeDraft[index].kcal)+' kcal';
+  };
+  label.append(amount);
+  row.append(name,label,energy);
   const remove=document.createElement('button');
   remove.type='button';
   remove.textContent='Çıkar';
@@ -140,15 +281,16 @@ collectionForm.addEventListener('submit',event=>{
  const type=collectionForm.elements.type.value;
  const servings=type==='recipe'?+collectionForm.elements.servings.value:1;
  if(type==='recipe')entries.push(...recipeDraft);
- const item={id:crypto.randomUUID(),type,name,servings,entries:entries.map(entry=>({...entry}))};
+ const item={id:editingRecipe??crypto.randomUUID(),type,name,servings,entries:entries.map(entry=>({...entry}))};
  try{
   validateCollection([item]);
   scaleEntries(item,1);
-  (state.collections??=[]).push(item);
+  const index=(state.collections??=[]).findIndex(saved=>saved.id===item.id);
+  if(index<0)state.collections.push(item);
+  else state.collections[index]=item;
   const ok=save();
-  checkedEntries.clear();
-  if(type==='recipe')recipeDraft.length=0;
-  collectionForm.reset();
+  if(type==='recipe')endRecipeEdit();
+  else{checkedEntries.clear();collectionForm.reset();}
   render();
   if(ok)toast(type==='recipe'?'Tarif kaydedildi.':'Öğün kaydedildi.');
  }catch(error){toast(error.message);}
@@ -196,11 +338,15 @@ function renderCollections(){
     if(ok)toast(item.name+' günlüğe eklendi.');
    }catch(error){toast(error.message);}
   };
+  const edit=row.querySelector('.edit-recipe');
+  edit.hidden=!recipe;
+  edit.onclick=()=>startRecipeEdit(item);
   row.querySelector('.remove-collection').onclick=()=>{
    if(!confirm(item.name+' kayıtlı listeden silinsin mi?'))return;
    state.collections=state.collections.filter(saved=>saved.id!==item.id);
+   if(editingRecipe===item.id)endRecipeEdit();
    save();
-   renderCollections();
+   render();
   };
   list.append(row);
  }
@@ -215,7 +361,23 @@ function renderEntries(record){
   empty.textContent='Günlüğün yeni bir başlangıca hazır. İlk besinini ekle.';
   list.append(empty);
  }
- for(const entry of record.entries){
+ for(const meal of meals){
+  const entries=record.entries.filter(entry=>entry.meal===meal);
+  if(!entries.length)continue;
+  const group=document.createElement('section');
+  group.className='meal-group';
+  const title=document.createElement('h3');
+  title.textContent=meal+' · '+num(total(entries))+' kcal';
+  const summary=document.createElement('p');
+  summary.className='hint';
+  const totals=macroTotals(entries);
+  summary.textContent=Object.entries(nutrients).map(([key,label])=>{
+   const {grams,known}=totals[key];
+   return label+' '+(known?num(grams)+' g':'—')+(known<entries.length?' ('+known+'/'+entries.length+')':'');
+  }).join(' · ');
+  group.append(title,summary);
+  list.append(group);
+  for(const entry of entries){
   const row=$('#entry-template').content.firstElementChild.cloneNode(true);
   const checkbox=row.querySelector('input');
   checkbox.checked=checkedEntries.has(entry.id);
@@ -240,15 +402,15 @@ function renderEntries(record){
    save();
    render();
   };
-  list.append(row);
+   group.append(row);
+  }
  }
  updateCollectionForm();
 }
-function renderMacros(entries){
- const list=$('#macro-totals');
+function renderMacros(list,entries,labels){
  list.replaceChildren();
- const totals=macroTotals(entries);
- for(const [key,label] of Object.entries(nutrients)){
+ const totals=macroTotals(entries,labels);
+ for(const [key,label] of Object.entries(labels)){
   const cell=document.createElement('div');
   const title=document.createElement('dt');
   title.textContent=label;
@@ -274,6 +436,15 @@ function renderHistory(){
  for(const [index,item] of history.entries()){
   const cell=$('#history-template').content.firstElementChild.cloneNode(true);
   cell.classList.toggle('active',index===count-1);
+  if(index===count-1)cell.setAttribute('aria-current','date');
+  cell.onclick=()=>{
+   $('#day').value=dateKey(item.date);
+   $('#day').dispatchEvent(new Event('change'));
+   const heading=$('#diary h2');
+   heading.tabIndex=-1;
+   heading.focus({preventScroll:true});
+   $('#diary').scrollIntoView();
+  };
   cell.querySelector('b').textContent=item.date.toLocaleDateString('tr-TR',{day:'numeric',month:'short'});
   cell.querySelector('.bar').style.height=Math.min((item.calories??0)/(item.target??2500)*90,90)+'px';
   cell.querySelector('small').textContent=item.calories===null?'Kayıt yok':num(item.calories)+' kcal';
@@ -284,6 +455,24 @@ function renderHistory(){
  $('#history-summary').textContent=logged.length
   ? logged.length+'/'+count+' gün kayıtlı · Günlük ortalama '+num(logged.reduce((sum,item)=>sum+item.calories,0)/logged.length)+' kcal'
   : 'Bu aralıkta günlük kaydı yok.';
+
+ const week=$('#week-comparison');
+ week.replaceChildren();
+ const fortnight=historyDays($('#day').value,state.days,14);
+ for(const [label,period] of [['Son 7 gün',fortnight.slice(7)],['Önceki 7 gün',fortnight.slice(0,7)]]){
+  const summary=periodSummary(period);
+  const card=document.createElement('article');
+  const title=document.createElement('strong');
+  title.textContent=label;
+  const info=document.createElement('p');
+  info.className='hint';
+  info.textContent=summary.logged?summary.logged+'/7 gün kayıtlı · '+num(summary.average)+' kcal/gün':'Kayıt yok';
+  const goalInfo=document.createElement('p');
+  goalInfo.className='hint';
+  goalInfo.textContent=summary.targets?'Hedef aşılmadı · '+summary.within+'/'+summary.targets+' gün':'Hedef karşılaştırması yok';
+  card.append(title,info,goalInfo);
+  week.append(card);
+ }
 }
 function render(){
  const record=day(),sum=total(record.entries),target=record.target,diff=target===null?null:target-sum;
@@ -293,13 +482,51 @@ function render(){
  $('#balance-note').textContent=target===null?'Günlük ihtiyacını görmek için profilini doldur.':`${num(sum)} kcal alındı · ${num(target)} kcal günlük hedef`;
  $('#ring').style.background=`conic-gradient(#d8e98c ${target?Math.min(sum/target,1)*360:0}deg,#36574b 0)`;
  renderEntries(record);
- renderMacros(record.entries);
+ renderMacros($('#macro-totals'),record.entries,nutrients);
+ renderMacros($('#extra-totals'),record.entries,extraNutrients);
+ updateCopyMeal();
  renderCollections();
  $('#profile-result').textContent=state.profile?`Kilonu koruma tahmini: ${num(calculate(state.profile))} kcal/gün. ${state.profile.custom?'Özel hedefin: '+num(+state.profile.custom)+' kcal.':''}`:'';
  renderHistory();
 }
+
+const csvForm=$('#csv-form');
+csvForm.elements.start.value=dateOffset(dateKey(),-29);
+csvForm.elements.end.value=dateKey();
+csvForm.onsubmit=event=>{
+ event.preventDefault();
+ try{
+  const start=csvForm.elements.start.value,end=csvForm.elements.end.value;
+  const data=diaryCsv(state.days,start,end);
+  if(!data){toast('Bu tarihlerde dışa aktarılacak besin kaydı yok.');return;}
+  const filename='kalori-pusulasi-'+start+'-'+end+'.csv';
+  if(window.AndroidBackup?.exportCsv){window.AndroidBackup.exportCsv(data,filename);return;}
+  const url=URL.createObjectURL(new Blob([data],{type:'text/csv;charset=utf-8'}));
+  const link=document.createElement('a');link.href=url;link.download=filename;link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+ }catch(error){toast(error.message);}
+};
 $('#export').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='kalori-pusulasi-'+dateKey()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
-$('#import').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>5e6)throw Error('Yedek 5 MB’dan küçük olmalı.');const next=validate(JSON.parse(await file.text()));if(!confirm('Bu yedek mevcut profil ve günlük kayıtlarının yerini alacak. Önce mevcut yedeğini indirdiğinden emin ol. Devam edilsin mi?'))return;state=next;checkedEntries.clear();recipeDraft.length=0;for(const el of pf.elements)if(el.name)el.value=state.profile?.[el.name]??(el.name==='sex'?'female':el.name==='activity'?'1.2':'');const ok=save();render();if(ok)toast('Yedek geri yüklendi.');}catch(err){toast('Yedek yüklenemedi: '+err.message);}finally{e.target.value='';}};
+$('#import').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>5e6)throw Error('Yedek 5 MB’dan küçük olmalı.');const next=validate(JSON.parse(await file.text()));if(!confirm('Bu yedek mevcut profil ve günlük kayıtlarının yerini alacak. Önce mevcut yedeğini indirdiğinden emin ol. Devam edilsin mi?'))return;state=next;endRecipeEdit();fillProfile();updatePickedFood(picker.getSelected());const ok=save();render();if(ok)toast('Yedek geri yüklendi.');}catch(err){toast('Yedek yüklenemedi: '+err.message);}finally{e.target.value='';}};
 let installEvent;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvent=e;$('#install').hidden=false;});$('#install').onclick=async()=>{await installEvent?.prompt();$('#install').hidden=true;};
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+
+function fillProfile(){
+ for(const input of pf.elements)if(input.name){
+  input.value=state.profile?.[input.name]??(input.name==='sex'?'female':input.name==='activity'?'1.2':'');
+ }
+}
+function applySyncedState(payload){
+ if(recipeDraft.length||editDialog.open)throw Error('Eşitlemeden önce açık düzenlemeyi kaydet veya kapat.');
+ const next=validate(payload);
+ localStorage.setItem(key,JSON.stringify(next));
+ state=next;
+ endRecipeEdit();
+ fillProfile();
+ updatePickedFood(picker.getSelected());
+ reminderUpdate();
+ render();
+}
+reminderUpdate=setupReminder(()=>Boolean(state.days[dateKey()]?.entries.length),toast);
+syncSchedule=setupSync({getState:()=>JSON.stringify(state),applyState:applySyncedState});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){$('#day').max=dateKey();render();}});render();

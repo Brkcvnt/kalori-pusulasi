@@ -1,5 +1,7 @@
 import {calories,dateKey,total} from './core.js';
 
+import {extraNutrients,nutrientAmount} from './insights.js?v=7';
+
 export const meals=['Kahvaltı','Öğle yemeği','Akşam yemeği','Ara öğün'];
 export const nutrients={protein:'Protein',carbs:'Karbonhidrat',fat:'Yağ'};
 export const validMacro=value=>Number.isFinite(value)&&value>=0&&value<=100;
@@ -11,6 +13,13 @@ export function validateEntry(e){
  if(e.macros!==undefined&&(!e.macros||typeof e.macros!=='object'||Array.isArray(e.macros)||
     Object.keys(e.macros).some(key=>!Object.hasOwn(nutrients,key)||!validMacro(e.macros[key]))))
   throw Error('Makro besin kaydı geçersiz.');
+ if(e.extras!==undefined&&(!e.extras||typeof e.extras!=='object'||Array.isArray(e.extras)||
+    Object.keys(e.extras).some(key=>!Object.hasOwn(extraNutrients,key)||!validMacro(e.extras[key]))))
+  throw Error('Ek besin değeri geçersiz.');
+ if(e.measures!==undefined&&(!e.measures||typeof e.measures!=='object'||Array.isArray(e.measures)||
+    Object.entries(e.measures).some(([key,value])=>!['Adet','Dilim','Paket','Porsiyon'].includes(key)||
+      !Number.isFinite(value)||value<=0||value>10000)))
+  throw Error('Porsiyon ölçüsü geçersiz.');
 }
 
 export function validateCollection(items){
@@ -38,13 +47,13 @@ export function scaleEntries(item,servings){
  });
 }
 
-export function macroTotals(entries){
- return Object.fromEntries(Object.keys(nutrients).map(key=>{
+export function macroTotals(entries,labels=nutrients){
+ return Object.fromEntries(Object.keys(labels).map(key=>{
   let grams=0,known=0;
   for(const entry of entries){
-   const amount=entry.macros?.[key];
-   if(!validMacro(amount))continue;
-   grams+=amount*entry.grams/100;
+   const amount=nutrientAmount(entry,key);
+   if(amount===null)continue;
+   grams+=amount;
    known++;
   }
   return [key,{grams,known}];
