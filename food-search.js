@@ -1,6 +1,11 @@
+import {validMacro} from './diary.js?v=6';
+
 // Nutrition parsing is independent of the UI so missing and serving-only values cannot become zero kcal.
 export const normalize=s=>String(s??'').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/[^a-z0-9]+/g,' ').trim();
 const numeric=v=>(typeof v==='number'||typeof v==='string'&&v.trim()!=='')&&Number.isFinite(Number(v))?Number(v):null;
+const macrosOf=values=>Object.fromEntries(Object.entries(values)
+ .map(([name,value])=>[name,numeric(value)])
+ .filter(([,value])=>validMacro(value)));
 export function productFood(p){
  if(!p||typeof p!=='object')return null;
  const n=p.nutriments||{};
@@ -9,9 +14,10 @@ export function productFood(p){
  const name=String(p.product_name_tr||p.product_name||p.generic_name||'').trim();
  const code=String(p.code??'');
  if(!name||!/^\d{4,14}$/.test(code))return null;
- return {id:'off:'+code,code,name,brand:Array.isArray(p.brands)?p.brands.join(', '):String(p.brands||''),per100:kcal!==null&&kcal>=0&&kcal<=1000?Math.round(kcal*10)/10:null,source:'Open Food Facts',url:'https://world.openfoodfacts.org/product/'+code,unit:'g / ml',original:''};
+ const macros=macrosOf({protein:n.proteins_100g,carbs:n.carbohydrates_100g,fat:n.fat_100g});
+ return {id:'off:'+code,code,name,macros,brand:Array.isArray(p.brands)?p.brands.join(', '):String(p.brands||''),per100:kcal!==null&&kcal>=0&&kcal<=1000?Math.round(kcal*10)/10:null,source:'Open Food Facts',url:'https://world.openfoodfacts.org/product/'+code,unit:'g / ml',original:''};
 }
-export function localFoods(rows){return rows.map(([id,name,per100,original])=>({id:'usda:'+id,name,per100,original,brand:'',unit:'g',source:'USDA',url:'https://fdc.nal.usda.gov/food-details/'+id+'/nutrients'}));}
+export function localFoods(rows){return rows.map(([id,name,per100,original,macros])=>({id:'usda:'+id,name,per100,original,macros,brand:'',unit:'g',source:'USDA',url:'https://fdc.nal.usda.gov/food-details/'+id+'/nutrients'}));}
 // Catalog arrays are replaced after loading; normalized fields are reused while typing.
 const indexes=new WeakMap();
 export function searchFoods(foods,query,limit=30){

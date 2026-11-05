@@ -34,3 +34,37 @@
 [data-theme="dark"] .food-result{background:#17271e;color:#edf4e4;border-color:#425840}[data-theme="dark"] .food-result small{color:#b9cdb0}[data-theme="dark"] .food-result:hover,[data-theme="dark"] .food-result:focus-visible,[data-theme="dark"] .selected-food{background:#293e29;border-color:#668552}[data-theme="dark"] input[readonly]{background:#233423;color:#c4d7b8}
 
 footer{flex-wrap:wrap;gap:12px}footer .creator-credit{flex-basis:100%;color:inherit}
+
+.compact-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.compact-actions button,.entry-actions button,#stop-scan{min-height:44px}
+.compact-actions .hint{align-self:center;margin:0}
+#saved-meals{margin-bottom:20px}
+.collection-item{border-bottom:1px solid #dce3d8;padding:12px 0;overflow-wrap:anywhere}
+.collection-item form{display:flex}
+.collection-item input{width:105px}
+.entry{flex-wrap:wrap}
+.entry-info{min-width:90px;overflow-wrap:anywhere}
+.entry input[type="checkbox"]{appearance:auto;width:22px;height:22px;margin:0;accent-color:#5c7439;flex:none}
+.entry-actions{display:flex;gap:3px;margin-left:auto}
+.entry-actions button{padding-inline:9px}
+.entry-kcal{white-space:nowrap}
+.macro-heading{font-size:16px;margin:18px 0 6px}
+.macro-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 18px}
+.macro-totals div{background:#edf2df;padding:9px 6px;border-radius:10px;text-align:center}
+.macro-totals dt{font-size:12px;overflow-wrap:anywhere}
+.macro-totals dd{font-weight:700;margin:3px 0}
+.macro-totals small{display:block;font-size:11px}
+#recipe-draft ul{padding-left:20px}
+#recipe-draft li{margin:5px 0}
+#recipe-draft button{padding:5px 9px;margin-left:5px}
+.history.month{grid-template-columns:repeat(10,minmax(0,1fr))}
+#history-range{width:auto}
+#history-summary{margin:6px 0 12px}
+dialog{width:min(440px,calc(100% - 32px));max-height:calc(100% - 32px);overflow:auto;padding:20px;border:1px solid #b9cd9f;border-radius:16px;background:#fff;color:#203c2b}
+dialog::backdrop{background:#0b1915aa}
+dialog video{display:block;width:100%;max-height:50vh;margin-top:12px;background:#101b18;border-radius:10px}
+[data-theme="dark"] dialog{background:#17271e;color:#edf4e4;border-color:#425840}
+[data-theme="dark"] .macro-totals div{background:#293e29}
+[data-theme="dark"] .collection-item{border-color:#34463d}
+@media(max-width:1050px){.history.month{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media(max-width:540px){.history.month{grid-template-columns:repeat(5,minmax(0,1fr))}.history.month .history-day{padding-inline:2px}.history.month .history-day small,.history.month .history-day em{font-size:10px}.entry-actions button{font-size:12px}}

@@ -1,9 +1,11 @@
-import {localFoods,productFood,searchFoods,searchUrl,fallbackSearchUrl,responseFoods,normalize} from './food-search.js?v=5';
+import {localFoods,productFood,searchFoods,searchUrl,fallbackSearchUrl,responseFoods,normalize} from './food-search.js?v=6';
 
 export function setupFoodPicker({form,onChange,onError}){
  const input=form.elements.name,per100=form.elements.per100;
  const results=document.querySelector('#food-results'),status=document.querySelector('#food-search-status'),detail=document.querySelector('#selected-food'),online=document.querySelector('#search-online');
  let catalog=[],selected=null,controller,revision=0,lastRequest=0,lastQuery='',lastResults=[],searchTimer,active=-1;
+ const addButtons=['#add-food','#add-ingredient'].map(id=>document.querySelector(id));
+ function setAdding(enabled){for(const button of addButtons)button.disabled=!enabled;}
  const setStatus=text=>status.textContent=text;
  function closeResults(){clearTimeout(searchTimer);results.hidden=true;active=-1;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');}
  function openResults(){results.hidden=!results.childElementCount;input.setAttribute('aria-expanded',String(!results.hidden));}
@@ -14,7 +16,7 @@ export function setupFoodPicker({form,onChange,onError}){
   setStatus('Besinler aranıyor…');
   searchTimer=setTimeout(searchLocal,150);
  }
- function clear(){selected=null;per100.value='';detail.replaceChildren();document.querySelector('#add-food').disabled=true;onChange();}
+ function clear(){selected=null;per100.value='';detail.replaceChildren();setAdding(false);onChange();}
  async function choose(food){
   if(food.per100===null)return;
   cancelSearch();closeResults();selected=food;input.value=food.name.slice(0,80);per100.value=food.per100;
@@ -22,17 +24,17 @@ export function setupFoodPicker({form,onChange,onError}){
   const p=document.createElement('p');p.textContent=(food.brand?food.brand+' · ':'')+food.per100.toLocaleString('tr-TR')+' kcal / 100 '+food.unit;
   const a=document.createElement('a');a.href=food.url;a.target='_blank';a.rel='noopener';a.textContent='Kaynak: '+food.source+' ↗';
   detail.append(strong,p,a);if(food.original&&food.original!==food.name){const s=document.createElement('small');s.textContent=food.original;detail.append(s);}
-  detail.hidden=false;results.replaceChildren();setStatus('Besin seçildi. Yediğin miktarı gir.');document.querySelector('#amount-label').textContent='Miktar ('+food.unit+')';document.querySelector('#add-food').disabled=false;onChange();
+  detail.hidden=false;results.replaceChildren();setStatus('Besin seçildi. Yediğin miktarı gir.');document.querySelector('#amount-label').textContent='Miktar ('+food.unit+')';setAdding(true);onChange();
   if(food.source==='Open Food Facts'&&navigator.onLine){
    const id=revision;const refresh=new AbortController();controller=refresh;const timeout=setTimeout(()=>refresh.abort(),8000);
-   setStatus('Ürünün güncel etiketi internetten kontrol ediliyor…');document.querySelector('#add-food').disabled=true;
+   setStatus('Ürünün güncel etiketi internetten kontrol ediliyor…');setAdding(false);
    try{const response=await fetch(searchUrl(food.code),{signal:refresh.signal,credentials:'omit',referrerPolicy:'no-referrer'});if(!response.ok)throw Error();const live=responseFoods(await response.json())[0];if(id!==revision)return;
     if(live&&live.id!==food.id)throw Error('Product identity mismatch');
     if(!live||live.per100===null){clear();detail.hidden=true;setStatus('Bu ürünün güncel kaynağında kalori bilgisi bulunamadı. Başka bir ürün seç.');return;}
     selected=live;input.value=live.name.slice(0,80);per100.value=live.per100;strong.textContent=live.name;p.textContent=(live.brand?live.brand+' · ':'')+live.per100.toLocaleString('tr-TR')+' kcal / 100 '+live.unit;
     setStatus('Güncel kalori internetten alındı. Yediğin miktarı gir.');onChange();
    }catch{if(id===revision)setStatus('Güncel etikete erişilemedi. Cihazdaki kaynak değeri kullanılıyor; ambalajdaki ürünle eşleştiğini kontrol et.');}
-   finally{clearTimeout(timeout);if(id===revision&&selected)document.querySelector('#add-food').disabled=false;}
+   finally{clearTimeout(timeout);if(id===revision&&selected)setAdding(true);}
   }
  }
  function show(foods){
@@ -66,8 +68,8 @@ export function setupFoodPicker({form,onChange,onError}){
  // Keep touch/click selection reliable when focus leaves the input.
  results.addEventListener('pointerdown',e=>{if(e.target.closest('button'))e.preventDefault();});
  document.addEventListener('pointerdown',e=>{if(e.target!==input&&!results.contains(e.target))closeResults();});
- form.addEventListener('focusout',e=>{if(e.relatedTarget!==input&&!results.contains(e.relatedTarget))closeResults();});
- online.onclick=async()=>{
+ document.addEventListener('focusin',e=>{if(e.target!==input&&!results.contains(e.target))closeResults();});
+ async function searchOnline(){
   clearTimeout(searchTimer);const query=input.value.trim();if(normalize(query).length<2){setStatus('Aramak için en az 2 harf yaz veya barkod gir.');return;}
   if(lastQuery===query&&lastResults.length){show(lastResults);openResults();setStatus('Son çevrimiçi aramanın sonuçları. Bir ürün seç.');return;}
   const wait=7000-(Date.now()-lastRequest);if(wait>0){setStatus('Yeni internet araması için '+Math.ceil(wait/1000)+' saniye bekle.');return;}
@@ -85,7 +87,8 @@ export function setupFoodPicker({form,onChange,onError}){
    if(id!==revision)return;searchLocal();openResults();const localCount=searchFoods(catalog,query).length;
    setStatus((err.name==='AbortError'?'Arama zaman aşımına uğradı.':err.message==='Failed to fetch'?'Çevrimiçi arama servisine erişilemiyor.':err.message)+' '+(localCount?'Aşağıdaki sonuçlar cihazdaki kaynak kataloğundan gösteriliyor.':'Bağlantını kontrol et veya daha genel bir besin adı dene.'));
   }finally{clearTimeout(timeout);online.disabled=false;}
- };
+ }
+ online.onclick=searchOnline;
  // Only the selected public nutrition records are cached; diary and profile data are never sent.
  let remembered=[];try{const saved=JSON.parse(localStorage.getItem('kalori-pusulasi-food-cache')||'[]');remembered=saved.filter(f=>f.source==='Open Food Facts'&&/^off:\d{4,14}$/.test(f.id)&&typeof f.name==='string'&&Number.isFinite(f.per100)&&f.per100>=0&&f.per100<=1000).slice(-100).map(f=>({...f,url:'https://world.openfoodfacts.org/product/'+f.id.slice(4)}));}catch{}
  catalog.push(...remembered);
@@ -95,5 +98,13 @@ export function setupFoodPicker({form,onChange,onError}){
   if(!selected&&document.activeElement===input)scheduleSearch();if(parts.some(p=>p.status==='rejected'))onError('Besin kataloğunun bir bölümü yüklenemedi. İnternet aramasını kullanabilir veya sayfayı yenileyebilirsin.');
  });
  clear();
- return {getSelected(){return selected;},remember(){if(selected?.source==='Open Food Facts'){remembered=[...remembered.filter(f=>f.id!==selected.id),selected].slice(-100);try{localStorage.setItem('kalori-pusulasi-food-cache',JSON.stringify(remembered));}catch{}}},reset(){cancelSearch();closeResults();clear();detail.hidden=true;results.replaceChildren();setStatus('Yeni besin için ad veya barkod yaz.');}};
+ return {
+  findBarcode(code){
+   cancelSearch();closeResults();clear();detail.hidden=true;input.value=code;
+   const match=catalog.find(food=>food.code===code&&food.per100!==null);
+   if(match)choose(match);
+   else if(online.disabled)setStatus('Barkod hazır. Önceki arama bitince İnternette ara’ya dokun.');
+   else searchOnline();
+  },
+  getSelected(){return selected;},remember(){if(selected?.source==='Open Food Facts'){remembered=[...remembered.filter(f=>f.id!==selected.id),selected].slice(-100);try{localStorage.setItem('kalori-pusulasi-food-cache',JSON.stringify(remembered));}catch{}}},reset(){cancelSearch();closeResults();clear();detail.hidden=true;results.replaceChildren();setStatus('Yeni besin için ad veya barkod yaz.');}};
 }
