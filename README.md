@@ -54,6 +54,12 @@ Eşitleme isteğe bağlıdır. Supabase bağlantısı kurulana kadar günlükler
 
 Supabase'in proje URL’si ve açık anahtarı istemcide kullanılır. Secret key veya service role key yalnızca sunucu içindir. Oturum bilgileri bu cihazda saklanır. [Supabase API anahtarları](https://supabase.com/docs/guides/api/api-keys)
 
+## Gezinme ve öğün planlama
+
+Ana bölümler masaüstünde üstte, telefonda altta görünür. Telefonda alt menünün üzerindeki çizgiden yukarı kaydırınca Özet açılır. Yukarı kaydırıp kısa süre bekleyerek bırakırsan bölüm değiştirici açılır. İçerik alanında yan kenara yakın bir yerden içeri kaydırarak veya **Geri** düğmesiyle önceki bölüme dönebilirsin.
+
+**Plan** bölümünden kayıtlı bir tarifi ya da öğünü seçip bir tarihe ekleyebilirsin. Plan, porsiyon kalorisini ve o günün alışveriş listesini gösterir. Planlanan gün geldiğinde öğünü günlüğe aktar. Türk yemeği şablonlarında malzemeleri ve miktarları kaydetmeden önce düzenleyebilirsin.
+
 ## Günlük araçları
 
 - Arama alanı boşken favoriler ve son kullanılan besinler listelenir. **Önceki günün seçili öğününü kopyala** düğmesi öğün seçicisindeki öğünü seçili tarihe ekler.

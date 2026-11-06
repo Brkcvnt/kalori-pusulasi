@@ -3,12 +3,22 @@ import {setupFoodPicker} from './food-picker.js?v=7';
 import {meals,nutrients,validateEntry,validateCollection,scaleEntries,macroTotals,historyDays} from './diary.js?v=7';
 import {setupBarcodeScanner} from './barcode.js?v=7';
 import {extraNutrients,toBaseAmount,periodSummary,dateOffset,diaryCsv,datedMeal,withAmount} from './insights.js?v=7';
-import {setupSync} from './sync.js?v=7';
+import {setupSync} from './sync.js?v=9';
 import {setupReminder} from './reminder.js?v=7';
+import {setupNavigation} from './navigation.js?v=9';
+import {setupPlanner,validatePlans} from './planner.js?v=9';
 const $=s=>document.querySelector(s), key='kalori-pusulasi-v1';
 let state={version:1,profile:null,days:{}}, timer, storageOK=true;
 let reminderUpdate=()=>{},syncSchedule=()=>{};
-function toast(text){$('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(timer);timer=setTimeout(()=>$('#toast').hidden=true,4500);}
+function toast(text,undo){
+ $('#toast-text').textContent=text;
+ $('#toast').hidden=false;
+ const button=$('#undo-delete');
+ button.hidden=!undo;
+ button.onclick=undo?()=>{button.onclick=null;undo();}:null;
+ clearTimeout(timer);
+ timer=setTimeout(()=>{$('#toast').hidden=true;button.onclick=null;},undo?8000:4500);
+}
 try{const saved=localStorage.getItem(key);if(saved)state=validate(JSON.parse(saved));}catch{storageOK=false;setTimeout(()=>toast('Kayıtlar okunamadı. Yedek al; tarayıcı depolamasını kontrol et.'),100);}
 function validate(s){
  if(s.version!==1||!s.days||typeof s.days!=='object'||Array.isArray(s.days))throw Error('Yedek biçimi geçersiz.');
@@ -18,6 +28,11 @@ function validate(s){
   v.entries.forEach(validateEntry);
  }
  if(s.collections!==undefined)validateCollection(s.collections);
+ if(s.plans!==undefined)validatePlans(s.plans);
+ for(const field of ['proteinGoal','carbsGoal','fatGoal']){
+  const value=s.profile?.[field];
+  if(value!==undefined&&value!==''&&(!Number.isFinite(+value)||+value<1||+value>1000))throw Error('Makro hedefi geçersiz.');
+ }
  if(s.favorites!==undefined){
   if(!Array.isArray(s.favorites)||s.favorites.length>100)throw Error('Favori listesi geçersiz.');
   s.favorites.forEach(validateEntry);
@@ -354,6 +369,7 @@ function renderCollections(){
 function renderEntries(record){
  const list=$('#entries');
  $('#entry-count').textContent=record.entries.length+' kayıt';
+ $('#diary-records h2').textContent=$('#day').value===dateKey()?'Bugünkü kayıtlar':'Seçili günün kayıtları';
  list.replaceChildren();
  if(!record.entries.length){
   const empty=document.createElement('p');
@@ -396,11 +412,23 @@ function renderEntries(record){
   const remove=row.querySelector('.delete');
   remove.setAttribute('aria-label',entry.name+' kaydını sil');
   remove.onclick=()=>{
+   const date=$('#day').value;
+   const position=record.entries.indexOf(entry);
    record.entries=record.entries.filter(item=>item.id!==entry.id);
    checkedEntries.delete(entry.id);
-   state.days[$('#day').value]=record;
-   save();
+   state.days[date]=record;
+   const ok=save();
    render();
+   if(ok)toast('Besin kaydı silindi.',()=>{
+    const current=state.days[date];
+    if(!current||current.entries.some(item=>item.id===entry.id)||current.entries.length>=10000){
+     toast('Kayıt geri alınamadı.');return;
+    }
+    current.entries.splice(position,0,entry);
+    const restored=save();
+    render();
+    if(restored)toast('Besin kaydı geri alındı.');
+   });
   };
    group.append(row);
   }
@@ -417,6 +445,8 @@ function renderMacros(list,entries,labels){
   const value=document.createElement('dd');
   const {grams,known}=totals[key];
   value.textContent=known?num(grams)+' g':'—';
+  const goal=labels===nutrients?+state.profile?.[key+'Goal']:0;
+  if(goal>0)value.textContent+=' / '+num(goal)+' g';
   if(known<entries.length){
    const coverage=document.createElement('small');
    coverage.textContent=known+'/'+entries.length+' kayıtta bilgi var';
@@ -440,10 +470,7 @@ function renderHistory(){
   cell.onclick=()=>{
    $('#day').value=dateKey(item.date);
    $('#day').dispatchEvent(new Event('change'));
-   const heading=$('#diary h2');
-   heading.tabIndex=-1;
-   heading.focus({preventScroll:true});
-   $('#diary').scrollIntoView();
+   goTo('diary',true,'records');
   };
   cell.querySelector('b').textContent=item.date.toLocaleDateString('tr-TR',{day:'numeric',month:'short'});
   cell.querySelector('.bar').style.height=Math.min((item.calories??0)/(item.target??2500)*90,90)+'px';
@@ -486,6 +513,7 @@ function render(){
  renderMacros($('#extra-totals'),record.entries,extraNutrients);
  updateCopyMeal();
  renderCollections();
+ renderPlans();
  $('#profile-result').textContent=state.profile?`Kilonu koruma tahmini: ${num(calculate(state.profile))} kcal/gün. ${state.profile.custom?'Özel hedefin: '+num(+state.profile.custom)+' kcal.':''}`:'';
  renderHistory();
 }
@@ -528,5 +556,30 @@ function applySyncedState(payload){
  render();
 }
 reminderUpdate=setupReminder(()=>Boolean(state.days[dateKey()]?.entries.length),toast);
+const goTo=setupNavigation();
+
+function recordPlannedEntries(date,entries){
+ const record=state.days[date]??{target:goal(),entries:[]};
+ if(record.entries.length+entries.length>10000)throw Error('Bu gün için kayıt sınırına ulaştın.');
+ record.entries.push(...entries.map(entry=>({...entry,id:crypto.randomUUID()})));
+ state.days[date]=record;
+ $('#day').value=date;
+ checkedEntries.clear();
+}
+function startTemplate(item){
+ if((recipeDraft.length||checkedEntries.size)&&!confirm('Mevcut tarif taslağı bu şablonla değiştirilsin mi?'))return;
+ endRecipeEdit();
+ recipeDraft.push(...item.entries);
+ collectionForm.elements.type.value='recipe';
+ collectionForm.elements.name.value=item.name;
+ collectionForm.elements.servings.value=item.servings;
+ renderEntries(day());
+ collectionForm.elements.name.focus();
+}
+const renderPlans=setupPlanner({
+ getState:()=>state,save,update:()=>{render();goTo('diary',true,'records');},
+ recordEntries:recordPlannedEntries,startTemplate,num,toast
+});
+
 syncSchedule=setupSync({getState:()=>JSON.stringify(state),applyState:applySyncedState});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){$('#day').max=dateKey();render();}});render();

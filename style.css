@@ -87,3 +87,73 @@ dialog video{display:block;width:100%;max-height:50vh;margin-top:12px;background
 .week-comparison strong{display:block;font-size:13px}
 [data-theme="dark"] .week-comparison article{background:#293e29}
 
+
+.app-shell{position:sticky;inset:0 0 auto;width:auto;z-index:12;display:flex;align-items:center;gap:18px;justify-content:space-between;padding:10px clamp(14px,4vw,54px);border-right:0;border-bottom:1px solid #e6eae3}
+.app-shell .brand{white-space:nowrap}
+.app-dock{min-width:0}
+#section-nav{display:flex;gap:5px;margin:0;overflow:visible}
+#section-nav a{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 14px;white-space:nowrap;color:inherit;background:transparent;border-radius:12px;font-weight:600}
+#section-nav a span:first-child{font-size:19px;line-height:1}
+#section-nav a[aria-current]{background:#edf2df;color:#203c2b}
+#app-back{min-height:44px;white-space:nowrap}
+#gesture-handle{display:none}
+main#workspace{margin:0 auto;max-width:1320px;padding:22px clamp(14px,4vw,50px) 36px}
+.workspace-head{margin-bottom:16px}
+.workspace-head h1{font-size:clamp(22px,3vw,32px)}
+.workspace-head .muted{margin-bottom:0}
+.screen{min-width:0}
+.screen-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.screen-grid #saved-meals{margin:0}
+[data-page=diary]{touch-action:pan-y pinch-zoom}
+.tile-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,205px),1fr));gap:10px}
+.tile-grid>.empty{grid-column:1/-1}
+#template-list{margin-top:8px}
+#template-list button{min-height:44px;text-align:left;font-weight:650}
+.plan-total{font-weight:650;margin:18px 0 10px}
+.plan-item,.collection-item{border:1px solid #dce3d8;border-radius:12px;padding:12px;min-width:0}
+.plan-item label{margin:10px 0}
+.plan-item input{max-width:130px}
+.shopping-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px 20px;padding-inline-start:18px}
+.recent-sections{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:12px 0;overscroll-behavior-inline:contain}
+.recent-sections button{flex:0 0 125px;min-height:96px;scroll-snap-align:start;font-weight:700}
+.recent-sections button[aria-current]{background:#d8e98f;color:#203c2b}
+#undo-delete{margin-left:12px;padding:7px 10px}
+.macro-goals label{padding:4px}
+[data-theme=dark] .app-shell{border-color:#34463d}
+[data-theme=dark] #section-nav a[aria-current]{background:#304432;color:#edf4e4}
+[data-theme=dark] .plan-item,[data-theme=dark] .collection-item{border-color:#34463d}
+@media(max-width:900px){
+ .screen-grid{grid-template-columns:1fr;gap:14px}
+}
+@media(max-width:760px),(pointer:coarse){
+ .app-dock{position:fixed;inset:auto 0 0;z-index:15;background:#fff;border-top:1px solid #dce3d8;padding:0 max(4px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(4px,env(safe-area-inset-left))}
+ [data-theme=dark] .app-dock{background:#192822;border-color:#34463d}
+ #section-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px}
+ #section-nav a{flex-direction:column;gap:3px;padding:4px 1px;min-height:51px;font-size:11px}
+ #gesture-handle{display:grid;place-items:center;width:100%;height:30px;padding:0;border:0;border-radius:0;background:transparent;touch-action:none;user-select:none}
+ #gesture-handle span{width:44px;height:5px;background:#8a9a8b;border-radius:9px}
+ main#workspace{padding-bottom:calc(108px + env(safe-area-inset-bottom));touch-action:pan-y pinch-zoom}
+ .workspace-head{display:flex;align-items:center}
+ .workspace-head .eyebrow,.workspace-head .muted{display:none}
+ .workspace-head h1{margin:0}
+ .workspace-head .header-actions{width:auto}
+ .workspace-head .theme-picker button{min-width:42px;padding:6px;font-size:11px}
+ #toast{bottom:calc(90px + env(safe-area-inset-bottom));z-index:16}
+ .datebar{margin-bottom:14px}
+}
+@media(max-width:420px){
+ .workspace-head{display:block}
+ .workspace-head .header-actions{margin-top:8px}
+ #app-back{padding-inline:10px}
+}
+
+
+.pane-nav{display:none}
+@media(max-width:900px){
+ .pane-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .pane-nav button{min-height:44px;font-weight:650}
+ .pane-nav button[aria-pressed=true]{background:#edf2df;color:#203c2b}
+ [data-theme=dark] .pane-nav button[aria-pressed=true]{background:#304432;color:#edf4e4}
+ [data-pane][data-inactive]{display:none}
+ #template-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

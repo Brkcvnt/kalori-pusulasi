@@ -126,7 +126,7 @@ export function setupSync({getState,applyState}){
    const before=getState();
    const payload=JSON.parse(before);
    const hash=await digest(payload);
-   const hasData=Boolean(payload.profile||Object.keys(payload.days).length||payload.collections?.length||payload.favorites?.length);
+   const hasData=Boolean(payload.profile||Object.keys(payload.days).length||payload.collections?.length||payload.favorites?.length||payload.plans?.length);
    const unchanged=pending&&(remote?.revision??0)===pending.revision&&hash===pending.localDigest;
    const action=decision&&unchanged?decision:syncDecision(connection.base,remote,hash,hasData);
    if(action==='choose'){
@@ -189,7 +189,7 @@ export function setupSync({getState,applyState}){
  $('#sync-now').onclick=()=>run();
  $('#sync-local').onclick=()=>run('upload');
  $('#sync-remote').onclick=()=>{
-  if(confirm('Bu cihazdaki günlük, profil, öğünler, tarifler ve favoriler hesaptaki kayıtlarla değiştirilsin mi?'))run('download');
+  if(confirm('Bu cihazdaki günlük, profil, öğünler, tarifler, planlar ve favoriler hesaptaki kayıtlarla değiştirilsin mi?'))run('download');
  };
  window.addEventListener('online',schedule);
  setInterval(()=>{if(!document.hidden)schedule();},60000);
