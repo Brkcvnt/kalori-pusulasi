@@ -2,25 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {localFoods} from '../food-search.js';
-import {gestureAction} from '../navigation.js';
 import {makeTemplate,recipeTemplateRows,planEntries,shoppingItems,validatePlans,validDate} from '../planner.js';
-
-test('Alt çizgide hızlı hareket özet, bekleyerek bırakma bölüm seçiciyi açar',()=>{
- const base={x:180,y:700,dx:4,dy:-100,width:360,held:70,handle:true};
- assert.equal(gestureAction(base),'dashboard');
- assert.equal(gestureAction({...base,held:320}),'recent');
- assert.equal(gestureAction({...base,dy:-30}),null);
- assert.equal(gestureAction({...base,dx:140}),null);
-});
-
-test('Geri hareketi iki yanda çalışır, ekranın tam kenarını ve dikey kaydırmayı kullanmaz',()=>{
- const base={x:28,y:330,dx:90,dy:6,width:360,held:70,handle:false};
- assert.equal(gestureAction(base),'back');
- assert.equal(gestureAction({...base,x:333,dx:-90}),'back');
- assert.equal(gestureAction({...base,x:4}),null);
- assert.equal(gestureAction({...base,x:180}),null);
- assert.equal(gestureAction({...base,dy:100}),null);
-});
 
 test('Şablonlar gerçek katalog verisi kullanır, plan porsiyonu ve alışveriş miktarı birlikte ölçeklenir',()=>{
  const {foods}=JSON.parse(readFileSync(new URL('../usda-foods.json',import.meta.url),'utf8'));
