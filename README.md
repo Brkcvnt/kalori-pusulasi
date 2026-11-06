@@ -56,7 +56,7 @@ Supabase'in proje URL’si ve açık anahtarı istemcide kullanılır. Secret ke
 
 ## Android güncelleme bildirimleri
 
-**Profil → Ayarlar → Güncelleme bildirimleri** bölümünden açılır. Android, internet bağlantısı varken yaklaşık altı saatlik aralıklarla yeni sürümü denetler. Cihazın pil ve çalışma koşulları denetimi geciktirebilir. Bildirime dokununca güncelleme ekranı açılır ve indirme kullanıcı onayıyla başlar.
+**Profil → Ayarlar → Güncelleme bildirimleri** bölümünden açılır. Bu ayar açıkken Android sürüm bildirimlerine Firebase Cloud Messaging üzerinden abone olunur. GitHub’da yeni Android sürümü yayımlandığında yayın iş akışı bildirim gönderir. Android arka planda sürümü düzenli olarak da denetler. Bildirime dokununca güncelleme ekranı açılır ve indirme kullanıcı onayıyla başlar.
 
 ## Gezinme ve öğün planlama
 

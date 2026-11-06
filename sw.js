@@ -1,4 +1,4 @@
-const CACHE='kalori-pusulasi-v11';
+const CACHE='kalori-pusulasi-v12';
 const ASSETS=['./','./index.html','./style.css?v=11','./theme.js?v=11','./app.js?v=11','./navigation.js?v=11','./planner.js?v=9','./core.js','./insights.js?v=7','./sync.js?v=9','./reminder.js?v=7','./diary.js?v=7','./barcode.js?v=7','./zxing-browser-0.1.5.min.js','./food-picker.js?v=7','./food-search.js?v=7','./usda-foods.json','./packaged-foods.json','./manifest.webmanifest?v=11','./icon.svg?v=11','./icon-dark.svg?v=11','./icon-192.png?v=11','./icon-512.png?v=11'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));self.skipWaiting();});
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('kalori-pusulasi-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
