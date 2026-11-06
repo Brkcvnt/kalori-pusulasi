@@ -18,7 +18,7 @@ const titles={
  "history": [
   "ZAMAN İÇİNDE",
   "Kalori geçmişi",
-  "Kayıtlı günlerini incele ve haftalarını karşılaştır."
+  "Kayıtlı günlerini incele ve dönemlerini karşılaştır."
  ],
  "profile": [
   "KİŞİSEL ALAN",
@@ -27,7 +27,7 @@ const titles={
  ]
 };
 
-export function setupNavigation(){
+export function setupNavigation(onDisplay=()=>{}){
  const nav=document.querySelector('#section-nav');
  const links=[...nav.querySelectorAll('a')];
  const sections=new Map(links.map(link=>[link.hash.slice(1),document.querySelector('[data-page="'+link.hash.slice(1)+'"]')]));
@@ -65,7 +65,8 @@ export function setupNavigation(){
    if(link.hash==='#'+active)link.setAttribute('aria-current','page');
    else link.removeAttribute('aria-current');
   }
-  const [kicker,title,description]=titles[id];
+  onDisplay(id);
+ const [kicker,title,description]=titles[id];
   document.querySelector('#section-kicker').textContent=kicker;
   document.querySelector('#section-title').textContent=title;
   document.querySelector('#section-description').textContent=description;

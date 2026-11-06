@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#f3f5fb"><meta name="description" content="Günlük kalori ihtiyacını hesapla, öğünlerini kaydet ve dengeni takip et."><link rel="manifest" href="manifest.webmanifest?v=11"><link rel="icon" id="site-icon" href="icon.svg?v=11" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-192.png?v=11"><script src="theme.js?v=11"></script><link rel="stylesheet" href="style.css?v=11"><title>Kalori Pusulası · Günlük dengeni bul</title></head>
+<html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#f3f5fb"><meta name="description" content="Günlük kalori ihtiyacını hesapla, öğünlerini kaydet ve dengeni takip et."><link rel="manifest" href="manifest.webmanifest?v=11"><link rel="icon" id="site-icon" href="icon.svg?v=11" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-192.png?v=11"><script src="theme.js?v=11"></script><link rel="stylesheet" href="style.css?v=13"><title>Kalori Pusulası · Günlük dengeni bul</title></head>
 <body><aside class="app-shell">
  <a class="brand" href="#dashboard"><svg class="brand-icon" width="37" height="37" viewBox="0 0 512 512" aria-hidden="true"><rect class="logo-tile" width="512" height="512" rx="108"/><circle class="logo-ring" cx="256" cy="256" r="176" stroke-width="22"/><circle class="logo-ring" cx="256" cy="256" r="141" stroke-opacity=".38" stroke-width="9"/><path class="logo-needle" d="M344 168 290 290 222 222Z"/><path class="logo-secondary" d="M168 344 222 222 290 290Z"/><circle class="logo-center" cx="256" cy="256" r="13"/></svg> Kalori Pusulası</a>
  <div class="app-dock">
@@ -76,7 +76,7 @@
  </div>
 </template>
 <template id="history-template">
- <button class="history-day" type="button"><b></b><span class="bar-track"><span class="bar"></span></span><small></small><em></em></button>
+ <button class="history-day" type="button"><span class="history-track" aria-hidden="true"><span class="history-bar"></span><span class="history-goal"></span></span><span class="history-date"></span><span class="history-energy"></span></button>
 </template>
 <dialog id="edit-dialog" aria-labelledby="edit-title">
  <h2 id="edit-title">Besin kaydını düzenle</h2><p id="edit-name" class="muted"></p>
@@ -90,13 +90,60 @@
  <h2 id="scan-title">Barkod tara</h2><video muted playsinline></video><p id="scan-status" role="status"></p>
  <button id="stop-scan" type="button" class="ghost">Kamerayı kapat</button>
 </dialog>
-<section class="card screen" data-page="history" id="history" hidden><div class="section-head"><div><p class="eyebrow">BÜYÜK RESMİ GÖR</p><h2>Kalori geçmişi</h2></div><div class="compact-actions"><label>Aralık<select id="history-range"><option value="7">Son 7 gün</option><option value="30">Son 30 gün</option></select></label><button id="export" class="ghost">Yedeği indir ↓</button></div></div><p id="history-summary" class="hint" role="status"></p><div class="history" id="history-chart"></div><h3 class="macro-heading">Haftalık karşılaştırma</h3><p class="hint">Seçili günde biten 7 gün ve ondan önceki 7 gün.</p><div id="week-comparison" class="week-comparison"></div><p class="hint">Aralık seçili günde biter. Ortalama, besin kaydı olan günlerden hesaplanır. Yedek günlük, profil, öğün ve tariflerini içerir.</p>
-<details><summary>Excel için CSV indir</summary>
- <form id="csv-form">
-  <div class="form-row"><label>Başlangıç tarihi<input name="start" type="date" required></label><label>Bitiş tarihi<input name="end" type="date" required></label></div>
-  <button class="ghost" type="submit">CSV indir ↓</button>
- </form>
-</details><label class="import-label">Yedeği geri yükle <input id="import" type="file" accept="application/json,.json"></label></section>
+<section class="card screen history-screen" data-page="history" id="history" hidden>
+ <div class="section-head history-header">
+  <div><p class="eyebrow">ZAMAN İÇİNDE</p><h2>Kalori geçmişi</h2><p class="hint">Günlük tüketimini, hedefini ve öğünlerini incele.</p></div>
+  <label>Görünüm<select id="history-range"><option value="7">7 gün</option><option value="30">30 gün</option></select></label>
+ </div>
+ <div class="history-toolbar" aria-label="Tarih aralığı">
+  <button class="ghost" id="history-previous" type="button" aria-label="Önceki dönem">‹</button>
+  <strong id="history-interval" aria-live="polite"></strong>
+  <button class="ghost" id="history-next" type="button" aria-label="Sonraki dönem">›</button>
+  <button class="ghost" id="history-today" type="button">Bugüne dön</button>
+ </div>
+ <dl class="history-metrics">
+  <div><dt>Günlük ortalama</dt><dd id="history-metric-average"></dd></div>
+  <div><dt>Toplam kalori</dt><dd id="history-metric-total"></dd></div>
+  <div><dt>Kayıtlı gün</dt><dd id="history-metric-logged"></dd></div>
+  <div><dt>Hedefi aşmadığın gün</dt><dd id="history-metric-goal"></dd></div>
+ </dl>
+ <div class="history-report">
+  <section class="history-plot">
+   <h3>Günlük kalori</h3>
+   <div class="history-legend"><span><i></i> Alınan</span><span><i></i> Günlük hedef</span><span>kcal</span></div>
+   <div class="history-graph">
+    <div class="history-axis" aria-hidden="true"><span id="history-axis-top"></span><span id="history-axis-mid"></span><span>0</span></div>
+    <div id="history-chart" class="history-chart" role="group" aria-label="Günlük kalori grafiği"></div>
+   </div>
+   <p class="hint">Öğünleri görmek için grafikten bir gün seç.</p>
+  </section>
+  <section id="history-detail" class="history-detail" aria-labelledby="history-day-title" hidden>
+   <p class="eyebrow">GÜNÜN AYRINTISI</p>
+   <div aria-live="polite"><h3 id="history-day-title"></h3><strong id="history-day-energy"></strong><p id="history-day-goal" class="hint"></p><p id="history-day-difference"></p><ul id="history-meals"></ul></div>
+   <button id="history-open-day" class="ghost" type="button">Günlüğü aç →</button>
+  </section>
+ </div>
+ <section class="history-compare">
+  <h3>Dönem karşılaştırması</h3>
+  <div class="history-periods">
+   <div><strong>Seçili dönem</strong><span id="history-period-current"></span><b id="history-average-current"></b></div>
+   <div><strong>Önceki dönem</strong><span id="history-period-previous"></span><b id="history-average-previous"></b></div>
+  </div>
+  <p id="history-average-change" class="hint"></p>
+  <p class="hint">Ortalamaya besin kaydı olan günler katılır.</p>
+ </section>
+ <details class="history-files"><summary>Dışa aktarma ve yedekler</summary>
+  <div class="compact-actions">
+   <button id="history-export-period" class="ghost" type="button">Seçili dönemi CSV indir ↓</button>
+   <button id="export" class="ghost" type="button">Yedeği indir ↓</button>
+  </div>
+  <form id="csv-form">
+   <div class="form-row"><label>Başlangıç tarihi<input name="start" type="date" required></label><label>Bitiş tarihi<input name="end" type="date" required></label></div>
+   <button class="ghost" type="submit">Özel aralığı CSV indir ↓</button>
+  </form>
+  <label class="import-label">Yedeği geri yükle <input id="import" type="file" accept="application/json,.json"></label>
+ </details>
+</section>
 
 <div class="screen screen-grid" data-page="profile" hidden><div class="pane-nav" role="group" aria-label="Alt bölümler"><button type="button" data-switch="goals" aria-pressed="true">Profil ve hedef</button><button type="button" data-switch="preferences" aria-pressed="false">Ayarlar</button></div><section class="card" id="profile" data-pane="goals"><p class="eyebrow">SANA GÖRE BİR BAŞLANGIÇ</p><h2>Profil ve hedef</h2><p class="muted">Günlük enerji ihtiyacın için yaklaşık bir hesap.</p><form id="profile-form"><div class="form-row"><label>Yaş<input name="age" type="number" min="18" max="100" step="1" placeholder="18–100" required></label><label>Formülde kullanılan cinsiyet<select name="sex" required><option value="female">Kadın</option><option value="male">Erkek</option></select></label></div><div class="form-row"><label>Boy (cm)<input name="height" type="number" min="120" max="230" step="0.1" placeholder="Örn. 175" required></label><label>Kilo (kg)<input name="weight" type="number" min="35" max="300" step="0.1" placeholder="Örn. 70" required></label></div><label>Hareket düzeyin<select name="activity"><option value="1.2">Çoğunlukla oturarak</option><option value="1.375">Hafif hareketli · haftada 1–3 gün</option><option value="1.55">Orta hareketli · haftada 3–5 gün</option><option value="1.725">Çok hareketli · haftada 6–7 gün</option></select></label><label>Özel günlük hedef (isteğe bağlı, kcal)<input name="custom" type="number" min="1000" max="6000" step="1" placeholder="Boş bırakırsan hesaplanan ihtiyaç kullanılır"></label><details class="macro-goals"><summary>Kişisel makro hedefleri</summary>
  <div class="macro-totals">
@@ -139,4 +186,4 @@
   </form>
  </details>
 </section></div>
-<footer>Kalori Pusulası <span>Bir sayıdan fazlasısın. Kendi dengeni bul.</span><span id="creator-credit" class="creator-credit">brkcvnt tarafından geliştirilmiştir.</span></footer></main><div id="toast" hidden><span id="toast-text" role="status" aria-live="polite"></span><button type="button" id="undo-delete" hidden>Geri al</button></div><script type="module" src="app.js?v=11"></script></body></html>
+<footer>Kalori Pusulası <span>Bir sayıdan fazlasısın. Kendi dengeni bul.</span><span id="creator-credit" class="creator-credit">brkcvnt tarafından geliştirilmiştir.</span></footer></main><div id="toast" hidden><span id="toast-text" role="status" aria-live="polite"></span><button type="button" id="undo-delete" hidden>Geri al</button></div><script type="module" src="app.js?v=13"></script></body></html>

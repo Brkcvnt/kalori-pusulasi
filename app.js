@@ -1,12 +1,13 @@
 import {calculate,total,calories,dateKey} from './core.js';
 import {setupFoodPicker} from './food-picker.js?v=7';
-import {meals,nutrients,validateEntry,validateCollection,scaleEntries,macroTotals,historyDays} from './diary.js?v=7';
+import {meals,nutrients,validateEntry,validateCollection,scaleEntries,macroTotals} from './diary.js?v=7';
 import {setupBarcodeScanner} from './barcode.js?v=7';
-import {extraNutrients,toBaseAmount,periodSummary,dateOffset,diaryCsv,datedMeal,withAmount} from './insights.js?v=7';
+import {extraNutrients,toBaseAmount,dateOffset,diaryCsv,datedMeal,withAmount} from './insights.js?v=7';
 import {setupSync} from './sync.js?v=9';
 import {setupReminder} from './reminder.js?v=7';
-import {setupNavigation} from './navigation.js?v=11';
+import {setupNavigation} from './navigation.js?v=13';
 import {setupPlanner,validatePlans} from './planner.js?v=9';
+import {setupHistory} from './history-view.js?v=13';
 const $=s=>document.querySelector(s), key='kalori-pusulasi-v1';
 let state={version:1,profile:null,days:{}}, timer, storageOK=true;
 let reminderUpdate=()=>{},syncSchedule=()=>{};
@@ -455,52 +456,21 @@ function renderMacros(list,entries,labels){
   list.append(cell);
  }
 }
-const range=$('#history-range');
-range.onchange=renderHistory;
-function renderHistory(){
- const count=+range.value;
- const history=historyDays($('#day').value,state.days,count);
- const chart=$('#history-chart');
- chart.classList.toggle('month',count===30);
- chart.replaceChildren();
- for(const [index,item] of history.entries()){
-  const cell=$('#history-template').content.firstElementChild.cloneNode(true);
-  cell.classList.toggle('active',index===count-1);
-  if(index===count-1)cell.setAttribute('aria-current','date');
-  cell.onclick=()=>{
-   $('#day').value=dateKey(item.date);
-   $('#day').dispatchEvent(new Event('change'));
-   goTo('diary',true,'records');
-  };
-  cell.querySelector('b').textContent=item.date.toLocaleDateString('tr-TR',{day:'numeric',month:'short'});
-  cell.querySelector('.bar').style.height=Math.min((item.calories??0)/(item.target??2500)*90,90)+'px';
-  cell.querySelector('small').textContent=item.calories===null?'Kayıt yok':num(item.calories)+' kcal';
-  cell.querySelector('em').textContent=item.target?'Hedef '+num(item.target):'Hedef yok';
-  chart.append(cell);
- }
- const logged=history.filter(item=>item.calories!==null);
- $('#history-summary').textContent=logged.length
-  ? logged.length+'/'+count+' gün kayıtlı · Günlük ortalama '+num(logged.reduce((sum,item)=>sum+item.calories,0)/logged.length)+' kcal'
-  : 'Bu aralıkta günlük kaydı yok.';
-
- const week=$('#week-comparison');
- week.replaceChildren();
- const fortnight=historyDays($('#day').value,state.days,14);
- for(const [label,period] of [['Son 7 gün',fortnight.slice(7)],['Önceki 7 gün',fortnight.slice(0,7)]]){
-  const summary=periodSummary(period);
-  const card=document.createElement('article');
-  const title=document.createElement('strong');
-  title.textContent=label;
-  const info=document.createElement('p');
-  info.className='hint';
-  info.textContent=summary.logged?summary.logged+'/7 gün kayıtlı · '+num(summary.average)+' kcal/gün':'Kayıt yok';
-  const goalInfo=document.createElement('p');
-  goalInfo.className='hint';
-  goalInfo.textContent=summary.targets?'Hedef aşılmadı · '+summary.within+'/'+summary.targets+' gün':'Hedef karşılaştırması yok';
-  card.append(title,info,goalInfo);
-  week.append(card);
- }
-}
+const renderHistory=setupHistory({
+ getDays:()=>state.days,
+ getDiaryDate:()=>$('#day').value,
+ openDiary(date){
+  $('#day').value=date;
+  $('#day').dispatchEvent(new Event('change'));
+  goTo('diary',true,'records');
+ },
+ exportRange(start,end){
+  csvForm.elements.start.value=start;
+  csvForm.elements.end.value=end;
+  csvForm.requestSubmit();
+ },
+ num
+});
 function render(){
  const record=day(),sum=total(record.entries),target=record.target,diff=target===null?null:target-sum;
  $('#consumed').textContent=num(sum);$('#target').textContent=target===null?'—':num(target);$('#difference').textContent=diff===null?'—':num(Math.abs(diff));
@@ -556,7 +526,7 @@ function applySyncedState(payload){
  render();
 }
 reminderUpdate=setupReminder(()=>Boolean(state.days[dateKey()]?.entries.length),toast);
-const goTo=setupNavigation();
+const goTo=setupNavigation(page=>{if(page==='history')renderHistory();});
 
 function recordPlannedEntries(date,entries){
  const record=state.days[date]??{target:goal(),entries:[]};
