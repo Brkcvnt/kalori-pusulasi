@@ -21,7 +21,10 @@
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
     document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = dark ? '#101b18' : '#f6f7f3';
+    if (meta) meta.content = dark ? '#0d1222' : '#f3f5fb';
+    const icon = document.querySelector('#site-icon');
+    const href = dark ? 'icon-dark.svg?v=11' : 'icon.svg?v=11';
+    if (icon && icon.getAttribute('href') !== href) icon.setAttribute('href', href);
     document.querySelectorAll('[data-theme-choice]').forEach(button => {
       button.setAttribute('aria-pressed', String(button.dataset.themeChoice === preference));
     });

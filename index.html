@@ -1,22 +1,21 @@
 <!doctype html>
-<html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#163d35"><meta name="description" content="Günlük kalori ihtiyacını hesapla, öğünlerini kaydet ve dengeni takip et."><link rel="manifest" href="manifest.webmanifest?v=8"><link rel="icon" href="icon.svg?v=8" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-192.png?v=8"><script src="theme.js?v=7"></script><link rel="stylesheet" href="style.css?v=9"><title>Kalori Pusulası · Günlük dengeni bul</title></head>
+<html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#f3f5fb"><meta name="description" content="Günlük kalori ihtiyacını hesapla, öğünlerini kaydet ve dengeni takip et."><link rel="manifest" href="manifest.webmanifest?v=11"><link rel="icon" id="site-icon" href="icon.svg?v=11" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-192.png?v=11"><script src="theme.js?v=11"></script><link rel="stylesheet" href="style.css?v=11"><title>Kalori Pusulası · Günlük dengeni bul</title></head>
 <body><aside class="app-shell">
- <a class="brand" href="#dashboard"><img class="brand-icon" src="icon.svg?v=8" width="34" height="34" alt=""> Kalori Pusulası</a>
+ <a class="brand" href="#dashboard"><svg class="brand-icon" width="37" height="37" viewBox="0 0 512 512" aria-hidden="true"><rect class="logo-tile" width="512" height="512" rx="108"/><circle class="logo-ring" cx="256" cy="256" r="176" stroke-width="22"/><circle class="logo-ring" cx="256" cy="256" r="141" stroke-opacity=".38" stroke-width="9"/><path class="logo-needle" d="M344 168 290 290 222 222Z"/><path class="logo-secondary" d="M168 344 222 222 290 290Z"/><circle class="logo-center" cx="256" cy="256" r="13"/></svg> Kalori Pusulası</a>
  <div class="app-dock">
-  <button id="gesture-handle" type="button" aria-label="Bölüm değiştirici" title="Yukarı kaydır veya dokun"><span></span></button>
   <nav id="section-nav" aria-label="Uygulama bölümleri">
-   <a href="#dashboard"><span aria-hidden="true">◷</span><span>Özet</span></a>
-   <a href="#diary"><span aria-hidden="true">☷</span><span>Günlük</span></a>
-   <a href="#plan"><span aria-hidden="true">▤</span><span>Plan</span></a>
-   <a href="#history"><span aria-hidden="true">▥</span><span>Geçmiş</span></a>
-   <a href="#profile"><span aria-hidden="true">⚙</span><span>Profil</span></a>
+   <a href="#dashboard"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg><span>Özet</span></a>
+   <a href="#diary"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 4h11a2 2 0 0 1 2 2v14H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3Zm0 0v16m3-11h6m-6 4h6"/></svg><span>Günlük</span></a>
+   <a href="#plan"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="2"/><path d="M8 4v4m8-4v4M4 10h16m-8 2v6m-3-3h6"/></svg><span>Plan</span></a>
+   <a href="#history"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20h16M7 17v-5m5 5V8m5 9V5"/></svg><span>Geçmiş</span></a>
+   <a href="#profile"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2Z"/></svg><span>Profil</span></a>
   </nav>
  </div>
- <button id="app-back" class="ghost" type="button" aria-label="Uygulama içinde geri git">← <span>Geri</span></button>
+<div class="header-actions"><div class="theme-picker" role="group" aria-label="Görünüm"><button type="button" data-theme-choice="light" aria-pressed="false">☀ Açık</button><button type="button" data-theme-choice="dark" aria-pressed="false">☾ Koyu</button><button type="button" data-theme-choice="system" aria-pressed="true" title="Cihazının tema ayarını izle">Cihaz</button></div></div>
 </aside>
-<main id="workspace"><header class="workspace-head"><div><p class="eyebrow">DAHA FARKINDA, DAHA DENGELİ</p><h1>Günlük dengeni bul.</h1><p class="muted">Yediklerini kaydet, gününü bir bakışta gör.</p></div><div class="header-actions"><div class="theme-picker" role="group" aria-label="Görünüm"><button type="button" data-theme-choice="light" aria-pressed="false">☀ Açık</button><button type="button" data-theme-choice="dark" aria-pressed="false">☾ Koyu</button><button type="button" data-theme-choice="system" aria-pressed="true" title="Cihazının tema ayarını izle">Cihaz</button></div><button id="install" hidden>Uygulamayı yükle ↗</button></div></header>
+<main id="workspace"><header class="workspace-head"><div><p class="eyebrow" id="section-kicker">GÜNLÜK PANO</p><h1 id="section-title">Günlük özet</h1><p class="muted" id="section-description">Enerji dengeni ve günlük hedefini bir bakışta gör.</p></div><button id="install" hidden>Uygulamayı yükle ↗</button></header>
 <div class="datebar"><label>Günlüğün <input type="date" id="day" required></label><button id="today" class="ghost">Bugüne dön</button><span id="save-status" role="status">Yalnızca bu tarayıcıda saklanır</span></div>
-<div class="screen" data-page="dashboard"><section id="dashboard" class="overview"><div class="balance"><div><p class="eyebrow">GÜNLÜK KALORİ DENGESİ</p><h2 id="balance-title">Önce seni tanıyalım.</h2><p id="balance-note">Günlük ihtiyacını görmek için profilini doldur.</p><a class="light-button" href="#profile">Profil ve hedef →</a></div><div class="ring" id="ring"><div><strong id="consumed">0</strong><span>kcal alındı</span></div></div></div><div class="stat"><span class="stat-icon">◎</span><p>Günlük hedefin</p><strong id="target">—</strong><small>kcal / gün</small></div><div class="stat"><span class="stat-icon amber">↗</span><p id="difference-label">Hedefe kalan</p><strong id="difference">—</strong><small id="difference-note">Profilini tamamla</small></div></section></div>
+<div class="screen" data-page="dashboard"><section id="dashboard" class="overview"><div class="balance"><div><p class="eyebrow">GÜNLÜK KALORİ DENGESİ</p><h2 id="balance-title">Önce seni tanıyalım.</h2><p id="balance-note">Günlük ihtiyacını görmek için profilini doldur.</p><a class="light-button" href="#profile">Profil ve hedef →</a></div><div class="ring" id="ring"><div><strong id="consumed">0</strong><span>kcal alındı</span></div></div></div><div class="stat"><span class="stat-icon">◎</span><p>Günlük hedefin</p><strong id="target">—</strong><small>kcal / gün</small></div><div class="stat"><span class="stat-icon amber">↗</span><p id="difference-label">Hedefe kalan</p><strong id="difference">—</strong><small id="difference-note">Profilini tamamla</small></div><article class="card dashboard-tip"><h3>Bugünün günlüğü</h3><p class="hint">Bir besin ekle veya önceki kayıtlarını gör.</p><a href="#diary">Günlüğü aç →</a></article></section></div>
 <div class="screen screen-grid" data-page="diary" hidden><div class="pane-nav" role="group" aria-label="Alt bölümler"><button type="button" data-switch="entry" aria-pressed="true">Besin ekle</button><button type="button" data-switch="records" aria-pressed="false">Kayıtlar</button></div><section class="card" id="diary" data-pane="entry"><div class="section-head"><div><p class="eyebrow">HER ÖĞÜN BİR ADIM</p><h2>Besin günlüğün</h2></div><span id="entry-count" class="badge">0 kayıt</span></div><form id="food-form"><label>Öğün<select name="meal"><option>Kahvaltı</option><option>Öğle yemeği</option><option>Akşam yemeği</option><option>Ara öğün</option></select></label><div class="food-search-field"><label>Besin, marka veya barkod<input name="name" placeholder="Örn. elma, Ülker Halley veya barkod" maxlength="80" required autocomplete="off" aria-describedby="food-search-status" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="food-results"></label><div id="food-results" class="food-results" role="listbox" aria-label="Besin arama sonuçları" hidden></div></div>
 <div class="search-actions"><button type="button" id="search-online" class="ghost">İnternette ara ↗</button><button type="button" id="scan-barcode" class="ghost">Barkod tara</button><span id="catalog-count" class="hint">Besin kataloğu yükleniyor…</span></div>
 <p id="food-search-status" class="hint" role="status" aria-live="polite">Besin adı yaz ve sonuçlardan seç.</p><div id="selected-food" class="selected-food" hidden></div>
@@ -57,10 +56,6 @@
  <strong></strong><p class="hint"></p><label>Porsiyon<input type="number" min="0.1" max="100" step="0.1" required></label>
  <div class="compact-actions"><button class="plan-log primary" type="button">Günlüğe ekle</button><button class="plan-remove ghost" type="button">Plandan çıkar</button></div>
 </article></template>
-<dialog id="recent-dialog" aria-labelledby="recent-title">
- <h2 id="recent-title">Bölümler arasında geç</h2><p class="hint">Bölümleri yatay kaydırarak gör, açmak istediğine dokun.</p>
- <div id="recent-sections" class="recent-sections"></div><button id="close-recent" class="ghost" type="button">Kapat</button>
-</dialog>
 <template id="collection-template">
  <article class="collection-item">
   <strong></strong><p class="hint collection-description"></p>
@@ -110,7 +105,7 @@
   <label>Yağ (g)<input name="fatGoal" type="number" min="1" max="1000" step="0.1"></label>
  </div>
 </details><button class="primary" type="submit">İhtiyacımı hesapla ve kaydet →</button><p id="profile-result" class="hint"></p></form><details><summary>Bu hesap nasıl çalışıyor?</summary><p>Mifflin–St Jeor formülü ile dinlenme enerji ihtiyacı hesaplanır ve seçtiğin hareket katsayısıyla çarpılır. Sonuç kilonu korumaya yönelik bir tahmindir. Özel hedefini bir uzmanla belirleyebilirsin.</p><p>18 yaş altı, hamilelik ve emzirme dönemi için uygun değildir. Tıbbi öneri veya kişisel beslenme planı değildir.</p><a href="https://pubmed.ncbi.nlm.nih.gov/2305711/" target="_blank" rel="noopener">Formülün bilimsel kaynağı ↗</a></details></section><section class="card" id="settings" data-pane="preferences" data-inactive>
- <h2>Ayarlar</h2><details><summary>Telefon hareketleri</summary><p>Alt menünün üzerindeki çizgiden yukarı kaydırınca Özet açılır. Yukarı kaydırıp kısa süre bekledikten sonra bırakırsan bölüm değiştirici açılır. İçerik alanının yan kenarına yakın bir noktadan içeri kaydırarak uygulama içinde geri gidebilirsin.</p></details>
+ <h2>Ayarlar</h2>
  <details id="update-notifications" hidden><summary>Güncelleme bildirimleri</summary>
   <p>Yeni Android sürümü bulunduğunda bildirim al. Android kontrol zamanını bağlantı ve pil durumuna göre belirler.</p>
   <button id="toggle-update-notifications" class="ghost" type="button">Güncelleme bildirimlerini aç</button>
@@ -144,4 +139,4 @@
   </form>
  </details>
 </section></div>
-<footer>Kalori Pusulası <span>Bir sayıdan fazlasısın. Kendi dengeni bul.</span><span id="creator-credit" class="creator-credit">brkcvnt tarafından geliştirilmiştir.</span></footer></main><div id="toast" hidden><span id="toast-text" role="status" aria-live="polite"></span><button type="button" id="undo-delete" hidden>Geri al</button></div><script type="module" src="app.js?v=10"></script></body></html>
+<footer>Kalori Pusulası <span>Bir sayıdan fazlasısın. Kendi dengeni bul.</span><span id="creator-credit" class="creator-credit">brkcvnt tarafından geliştirilmiştir.</span></footer></main><div id="toast" hidden><span id="toast-text" role="status" aria-live="polite"></span><button type="button" id="undo-delete" hidden>Geri al</button></div><script type="module" src="app.js?v=11"></script></body></html>

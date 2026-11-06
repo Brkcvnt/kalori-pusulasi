@@ -5,7 +5,7 @@ import {setupBarcodeScanner} from './barcode.js?v=7';
 import {extraNutrients,toBaseAmount,periodSummary,dateOffset,diaryCsv,datedMeal,withAmount} from './insights.js?v=7';
 import {setupSync} from './sync.js?v=9';
 import {setupReminder} from './reminder.js?v=7';
-import {setupNavigation} from './navigation.js?v=9';
+import {setupNavigation} from './navigation.js?v=11';
 import {setupPlanner,validatePlans} from './planner.js?v=9';
 const $=s=>document.querySelector(s), key='kalori-pusulasi-v1';
 let state={version:1,profile:null,days:{}}, timer, storageOK=true;
@@ -507,7 +507,7 @@ function render(){
  $('#difference-label').textContent=diff!==null&&diff<0?'Hedefin üzerinde':'Hedefe kalan';$('#difference-note').textContent=target===null?'Profilini tamamla':'kcal';
  $('#balance-title').textContent=diff===null?'Önce seni tanıyalım.':diff<0?`Hedefinin ${num(-diff)} kcal üzerindesin.`:diff===0?'Günlük hedefine ulaştın.':`Hedefine ${num(diff)} kcal kaldı.`;
  $('#balance-note').textContent=target===null?'Günlük ihtiyacını görmek için profilini doldur.':`${num(sum)} kcal alındı · ${num(target)} kcal günlük hedef`;
- $('#ring').style.background=`conic-gradient(#d8e98c ${target?Math.min(sum/target,1)*360:0}deg,#36574b 0)`;
+ $('#ring').style.background=`conic-gradient(var(--ring-fill) ${target?Math.min(sum/target,1)*360:0}deg,var(--ring-track) 0)`;
  renderEntries(record);
  renderMacros($('#macro-totals'),record.entries,nutrients);
  renderMacros($('#extra-totals'),record.entries,extraNutrients);

@@ -60,7 +60,7 @@ Supabase'in proje URL’si ve açık anahtarı istemcide kullanılır. Secret ke
 
 ## Gezinme ve öğün planlama
 
-Ana bölümler masaüstünde üstte, telefonda altta görünür. Telefonda alt menünün üzerindeki çizgiden yukarı kaydırınca Özet açılır. Yukarı kaydırıp kısa süre bekleyerek bırakırsan bölüm değiştirici açılır. İçerik alanında yan kenara yakın bir yerden içeri kaydırarak veya **Geri** düğmesiyle önceki bölüme dönebilirsin.
+Ana bölümler masaüstünde üstte, telefonda alttaki sabit menüde görünür. Açık, Koyu ve Cihaz seçenekleri uygulamanın renklerini ve logosunu birlikte değiştirir.
 
 **Plan** bölümünden kayıtlı bir tarifi ya da öğünü seçip bir tarihe ekleyebilirsin. Plan, porsiyon kalorisini ve o günün alışveriş listesini gösterir. Planlanan gün geldiğinde öğünü günlüğe aktar. Türk yemeği şablonlarında malzemeleri ve miktarları kaydetmeden önce düzenleyebilirsin.
 
