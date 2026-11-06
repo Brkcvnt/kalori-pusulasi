@@ -54,6 +54,10 @@ Eşitleme isteğe bağlıdır. Supabase bağlantısı kurulana kadar günlükler
 
 Supabase'in proje URL’si ve açık anahtarı istemcide kullanılır. Secret key veya service role key yalnızca sunucu içindir. Oturum bilgileri bu cihazda saklanır. [Supabase API anahtarları](https://supabase.com/docs/guides/api/api-keys)
 
+## Android güncelleme bildirimleri
+
+**Profil → Ayarlar → Güncelleme bildirimleri** bölümünden açılır. Android, internet bağlantısı varken yaklaşık altı saatlik aralıklarla yeni sürümü denetler. Cihazın pil ve çalışma koşulları denetimi geciktirebilir. Bildirime dokununca güncelleme ekranı açılır ve indirme kullanıcı onayıyla başlar.
+
 ## Gezinme ve öğün planlama
 
 Ana bölümler masaüstünde üstte, telefonda altta görünür. Telefonda alt menünün üzerindeki çizgiden yukarı kaydırınca Özet açılır. Yukarı kaydırıp kısa süre bekleyerek bırakırsan bölüm değiştirici açılır. İçerik alanında yan kenara yakın bir yerden içeri kaydırarak veya **Geri** düğmesiyle önceki bölüme dönebilirsin.

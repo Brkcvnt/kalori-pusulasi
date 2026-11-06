@@ -583,3 +583,21 @@ const renderPlans=setupPlanner({
 
 syncSchedule=setupSync({getState:()=>JSON.stringify(state),applyState:applySyncedState});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){$('#day').max=dateKey();render();}});render();
+
+const nativeUpdates=window.AndroidBackup;
+if(nativeUpdates?.updateNotificationStatus){
+ const section=$('#update-notifications'),toggle=$('#toggle-update-notifications');
+ function updateNotificationSettings(){
+  const status=nativeUpdates.updateNotificationStatus();
+  toggle.textContent=status==='off'?'Güncelleme bildirimlerini aç':'Güncelleme bildirimlerini kapat';
+  $('#update-notification-status').textContent={
+   off:'Bildirimler kapalı.',
+   on:'Bildirimler açık.',
+   blocked:'Bildirimler Android ayarlarında engellenmiş.'
+  }[status];
+ }
+ toggle.onclick=()=>nativeUpdates.setUpdateNotifications(nativeUpdates.updateNotificationStatus()==='off');
+ window.addEventListener('kalori-update-notification-change',updateNotificationSettings);
+ section.hidden=false;
+ updateNotificationSettings();
+}
