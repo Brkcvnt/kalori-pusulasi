@@ -107,5 +107,6 @@ export function setupFoodPicker({form,onChange,onError,getQuickFoods}){
    else if(online.disabled)setStatus('Barkod hazır. Önceki arama bitince İnternette ara’ya dokun.');
    else searchOnline();
   },
+  searchLocalFoods(query){return query.trim().length>=2?searchFoods(catalog,query,12).filter(food=>food.per100!==null):[];},
   getSelected(){return selected;},remember(){if(selected?.source==='Open Food Facts'){remembered=[...remembered.filter(f=>f.id!==selected.id),selected].slice(-100);try{localStorage.setItem('kalori-pusulasi-food-cache',JSON.stringify(remembered));}catch{}}},reset(){cancelSearch();closeResults();clear();detail.hidden=true;results.replaceChildren();setStatus('Yeni besin için ad veya barkod yaz.');}};
 }

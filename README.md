@@ -1,6 +1,6 @@
 # Kalori Pusulası 🌿
 
-Türkçe, mobil uyumlu bir günlük kalori takip uygulaması. Sunucu hesabı, API anahtarı veya ücretli servis gerektirmez.
+Türkçe, mobil uyumlu bir günlük kalori takip uygulaması. Temel takip ve fast food kataloğu sunucu hesabı veya API anahtarı gerektirmez.
 
 ## Özellikler
 
@@ -42,6 +42,14 @@ Günlükte tekrar kullanacağın besinleri işaretle, **Öğünler ve tarifler**
 
 **Barkod tara** düğmesi kameraya izin istediğinde açılır. Tarayıcıda kamera için HTTPS veya localhost gerekir. Kamera görüntüsü cihazda işlenir ve tarama penceresi kapanınca kamera durur. Barkodu arama kutusuna elle de girebilirsin.
 
+
+## Fotoğraftan öğün ve fast food
+
+**Günlük → Besin ekle** bölümünde **Fotoğraftan ekle** veya **Fast food kataloğu** düğmesini kullan. Fotoğrafın önizlemesi cihazda hazırlanır. Otomatik analiz kullanıldığında, uygulama küçültülmüş fotoğrafı OpenAI'a gönderir ve görünen bileşenler için miktar aralıkları önerir. Kalori hesabı, seçtiğin katalog kaydı ve onayladığın miktar üzerinden yapılır. Görünmeyen yağ ve sosları aramayla ayrıca ekleyebilirsin.
+
+Otomatik tanımayı yerel Node sunucusunda açmak için sunucu ortamında `OPENAI_API_KEY` ayarla ve `npm start` ile sunucuyu başlat. Varsayılan model `gpt-4.1-mini`. Gerekirse `OPENAI_MEAL_MODEL` ile görüntü ve yapılandırılmış çıktı destekleyen başka bir model seç. GitHub Pages ve paket içindeki Android ekranında fotoğraf önizlemesi ile elle eşleştirme kullanılabilir. Halka açık otomatik analiz için kimlik doğrulama ve istek sınırı olan bir sunucu kurulumu gerekir.
+
+Fast food kataloğu Türkiye kaynaklarından derlenmiştir. Kaynak ve kontrol tarihi ürünün yanında gösterilir. Bileşenleri ayrı ekleyerek patatesi, içeceği ve sosu seçebilir, pizza boyunu, hamurunu ve dilim sayısını belirleyebilirsin. Katalog bütün şubelerin veya kampanyaların tam listesini temsil etmez. Doğrulanmış kalori bulunmayan ürünler listelenir ve kalori toplamına alınmaz.
 
 ## Cihazlar arası eşitleme
 
