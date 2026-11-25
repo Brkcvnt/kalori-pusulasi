@@ -326,3 +326,13 @@ footer .creator-credit { margin-inline-start: auto; }
   #template-list { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 
+
+#meal-capture { width: min(42rem, calc(100% - 2rem)); max-height: 85dvh; overflow: auto; }
+#meal-capture label { display: block; margin-block: .6rem; }
+#capture-preview { width: 100%; max-height: 14rem; object-fit: contain; }
+#capture-results { max-height: 14rem; overflow: auto; }
+#capture-results article, #capture-items article {
+ display: grid; gap: .35rem; padding-block: .6rem; border-bottom: 1px solid currentColor;
+}
+#capture-results button { text-align: start; }
+#capture-items select, #capture-items button { width: 100%; }

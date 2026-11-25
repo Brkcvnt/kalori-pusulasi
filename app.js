@@ -1,12 +1,13 @@
-import {calculate,total,calories,dateKey} from './core.js';
-import {setupFoodPicker} from './food-picker.js?v=7';
-import {meals,nutrients,validateEntry,validateCollection,scaleEntries,macroTotals} from './diary.js?v=7';
+import {calculate,total,calories,dateKey,entryCalories} from './core.js';
+import {setupFoodPicker} from './food-picker.js?v=14';
+import {setupMealCapture} from './meal-capture.js?v=14';
+import {meals,nutrients,validateEntry,validateCollection,scaleEntries,macroTotals} from './diary.js?v=14';
 import {setupBarcodeScanner} from './barcode.js?v=7';
-import {extraNutrients,toBaseAmount,dateOffset,diaryCsv,datedMeal,withAmount} from './insights.js?v=7';
+import {extraNutrients,toBaseAmount,dateOffset,diaryCsv,datedMeal,withAmount} from './insights.js?v=14';
 import {setupSync} from './sync.js?v=9';
 import {setupReminder} from './reminder.js?v=7';
 import {setupNavigation} from './navigation.js?v=13';
-import {setupPlanner,validatePlans} from './planner.js?v=9';
+import {setupPlanner,validatePlans} from './planner.js?v=14';
 import {setupHistory} from './history-view.js?v=13';
 const $=s=>document.querySelector(s), key='kalori-pusulasi-v1';
 let state={version:1,profile:null,days:{}}, timer, storageOK=true;
@@ -234,7 +235,7 @@ editForm.addEventListener('submit',event=>{
  if(!entry){editDialog.close();return;}
  try{
   const grams=+editForm.elements.grams.value;
-  const kcal=calories(entry.per100,grams);
+  const kcal=entryCalories(entry,grams);
   Object.assign(entry,{grams,kcal,meal:editForm.elements.meal.value});
   const ok=save();
   editDialog.close();
@@ -546,6 +547,20 @@ function startTemplate(item){
  renderEntries(day());
  collectionForm.elements.name.focus();
 }
+setupMealCapture({
+ searchFoods:query=>picker.searchLocalFoods(query),
+ addEntries:entries=>{
+  const date=$('#day').value;
+  const meal=ff.elements.meal.value;
+  const records=entries.map(entry=>({...entry,meal,id:crypto.randomUUID()}));
+  records.forEach(validateEntry);
+  recordPlannedEntries(date,records);
+  const ok=save();
+  render();
+  goTo('diary',true,'records');
+  if(ok)toast(records.length+' besin günlüğüne eklendi.');
+ }
+});
 const renderPlans=setupPlanner({
  getState:()=>state,save,update:()=>{render();goTo('diary',true,'records');},
  recordEntries:recordPlannedEntries,startTemplate,num,toast

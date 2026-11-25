@@ -1,6 +1,6 @@
-import {calories,dateKey,total} from './core.js';
+import {entryCalories,dateKey,total} from './core.js';
 
-import {extraNutrients,nutrientAmount} from './insights.js?v=7';
+import {extraNutrients,nutrientAmount} from './insights.js?v=14';
 
 export const meals=['Kahvaltı','Öğle yemeği','Akşam yemeği','Ara öğün'];
 export const nutrients={protein:'Protein',carbs:'Karbonhidrat',fat:'Yağ'};
@@ -8,10 +8,12 @@ export const validMacro=value=>Number.isFinite(value)&&value>=0&&value<=100;
 
 export function validateEntry(e){
  if(!e||typeof e.name!=='string'||e.name.length>80||!meals.includes(e.meal)||
-    typeof e.id!=='string'||!Number.isFinite(e.kcal)||e.kcal!==calories(e.per100,e.grams))
+    typeof e.id!=='string'||!Number.isFinite(e.kcal)||e.kcal!==entryCalories(e))
   throw Error('Besin kaydı geçersiz.');
+ if(e.portionKcal!==undefined&&(!['porsiyon','dilim (1/4)','dilim (1/6)','dilim (1/8)'].includes(e.unit)||
+    e.per100!==undefined||e.extras!==undefined||e.measures!==undefined))throw Error('Porsiyon birimi geçersiz.');
  if(e.macros!==undefined&&(!e.macros||typeof e.macros!=='object'||Array.isArray(e.macros)||
-    Object.keys(e.macros).some(key=>!Object.hasOwn(nutrients,key)||!validMacro(e.macros[key]))))
+    Object.keys(e.macros).some(key=>!Object.hasOwn(nutrients,key)||!(e.portionKcal===undefined?validMacro(e.macros[key]):Number.isFinite(e.macros[key])&&e.macros[key]>=0&&e.macros[key]<=10000))))
   throw Error('Makro besin kaydı geçersiz.');
  if(e.extras!==undefined&&(!e.extras||typeof e.extras!=='object'||Array.isArray(e.extras)||
     Object.keys(e.extras).some(key=>!Object.hasOwn(extraNutrients,key)||!validMacro(e.extras[key]))))
@@ -43,7 +45,7 @@ export function scaleEntries(item,servings){
  return item.entries.map(entry=>{
   const grams=Math.round(entry.grams*ratio*1000)/1000;
   if(grams<=0||grams>10000)throw Error('Bu porsiyon miktarı kaydedilemiyor.');
-  return {...entry,grams,kcal:calories(entry.per100,grams)};
+  return {...entry,grams,kcal:entryCalories(entry,grams)};
  });
 }
 

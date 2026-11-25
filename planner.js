@@ -1,5 +1,5 @@
 import {calories,dateKey,total} from './core.js';
-import {meals,scaleEntries,validateCollection} from './diary.js?v=7';
+import {meals,scaleEntries,validateCollection} from './diary.js?v=14';
 import {localFoods} from './food-search.js?v=7';
 
 const templates=[

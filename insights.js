@@ -1,4 +1,4 @@
-import {calories,dateKey} from './core.js';
+import {entryCalories,dateKey} from './core.js';
 
 export const extraNutrients={fiber:'Lif',sugars:'Şeker',salt:'Tuz'};
 const amountValid=value=>Number.isFinite(value)&&value>0&&value<=10000;
@@ -34,7 +34,8 @@ export function periodSummary(history){
 }
 export function nutrientAmount(entry,key){
  const value=entry.macros?.[key]??entry.extras?.[key];
- return Number.isFinite(value)&&value>=0&&value<=100?value*entry.grams/100:null;
+ const factor=entry.portionKcal===undefined?100:1;
+ return Number.isFinite(value)&&value>=0&&value<=(factor===100?100:10000)?value*entry.grams/factor:null;
 }
 function csvCell(value){
  if(value===null||value===undefined)return '';
@@ -61,6 +62,6 @@ export function datedMeal(days,date,meal){
  return days[dateOffset(date,-1)]?.entries.filter(entry=>entry.meal===meal)??[];
 }
 export function withAmount(entry,grams){
- return {...entry,grams,kcal:calories(entry.per100,grams)};
+ return {...entry,grams,kcal:entryCalories(entry,grams)};
 }
 

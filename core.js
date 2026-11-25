@@ -11,4 +11,10 @@ export function calories(per100, grams) {
   if (!Number.isFinite(per100)||!Number.isFinite(grams)||per100<0||per100>1000||grams<=0||grams>10000) throw Error('Kalori 0–1000, miktar 0’dan büyük ve en fazla 10000 olmalı.');
   return Math.round(per100*grams/100*10)/10;
 }
+export function entryCalories(entry, amount=entry.grams) {
+  if (entry.portionKcal === undefined) return calories(entry.per100, amount);
+  if (!Number.isFinite(entry.portionKcal) || entry.portionKcal < 0 || entry.portionKcal > 10000 ||
+      !Number.isFinite(amount) || amount <= 0 || amount > 10000) throw Error('Porsiyon bilgisi geçersiz.');
+  return Math.round(entry.portionKcal * amount * 10) / 10;
+}
 export function dateKey(d=new Date()) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
