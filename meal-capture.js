@@ -50,6 +50,7 @@ export function setupMealCapture({searchFoods, addEntries, cloudAnalysis}) {
  const file = get('capture-photo');
  const image = get('capture-preview');
  const analyze = get('capture-analyze');
+ const providerNotice = get('capture-provider-notice');
  const video = get('capture-camera-video');
  const cameraPanel = get('capture-camera-panel');
  const cameraButton = get('capture-camera-start');
@@ -261,6 +262,7 @@ export function setupMealCapture({searchFoods, addEntries, cloudAnalysis}) {
   rows=[];
   photo=null;
   service=false;
+  providerNotice.hidden=true;
   pending=null;
   file.value='';
   image.removeAttribute('src');
@@ -305,6 +307,8 @@ export function setupMealCapture({searchFoods, addEntries, cloudAnalysis}) {
    }
    if(ticket!==generation||!dialog.open)return;
    service=selectedService;
+   providerNotice.hidden=!service;
+   providerNotice.textContent=service==='cloud'?'Analiz et’e bastığında fotoğraf Google Gemini’ye gönderilir. Ücretsiz kotada Google fotoğrafları ürünlerini geliştirmek için kullanabilir.':'Analiz et’e bastığında fotoğraf OpenAI’a gönderilir.';
    if(!service&&!video.srcObject&&cameraPanel.hidden&&!photo&&!status.textContent)status.textContent=notice;
    updateAnalyze();
   }
@@ -367,7 +371,7 @@ export function setupMealCapture({searchFoods, addEntries, cloudAnalysis}) {
    status.textContent=data.items.length?(data.note||'Her öneri için uygun katalog kaydını seç.'):'Yiyecek belirlenemedi. Daha net bir fotoğraf dene veya besinleri elle ekle.';
    renderRows();
   } catch(error) {
-   if(ticket===generation&&!controller.signal.aborted)status.textContent=error.name==='TimeoutError'?'Analiz zaman aşımına uğradı.':error.message;
+   if(ticket===generation&&!controller.signal.aborted)status.textContent=error.status===429?'Ücretsiz analiz kotası doldu. Daha sonra tekrar dene veya besinleri elle ekle.':error.name==='TimeoutError'?'Analiz zaman aşımına uğradı.':error.message;
   } finally {
    if(pending===controller){pending=null;updateAnalyze();}
   }
