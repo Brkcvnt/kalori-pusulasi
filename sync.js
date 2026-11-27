@@ -72,6 +72,7 @@ export function setupSync({getState,applyState}){
    if(!response.ok){
     const error=Error('Sunucu isteği tamamlanamadı.');
     error.status=response.status;
+    if(path==='/functions/v1/kalori-meal-photo')error.code=(await response.json().catch(()=>null))?.error;
     throw error;
    }
    return await response.json();

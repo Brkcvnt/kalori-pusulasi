@@ -200,6 +200,8 @@ export function setupMealCapture({searchFoods, addEntries, cloudAnalysis}) {
  }
  function updateAnalyze() {
   analyze.disabled=!photo||!service||Boolean(pending);
+  analyze.textContent=pending?'Analiz ediliyor…':'Analiz et';
+  analyze.setAttribute('aria-busy',String(Boolean(pending)));
  }
  function stopCamera() {
   cameraSession++;
@@ -355,7 +357,7 @@ export function setupMealCapture({searchFoods, addEntries, cloudAnalysis}) {
   const controller=new AbortController();
   pending=controller;
   updateAnalyze();
-  status.textContent='Fotoğraf inceleniyor…';
+  status.textContent='Fotoğraf inceleniyor. Bu işlem birkaç saniye sürebilir…';
   try {
    const signal=AbortSignal.any([controller.signal,AbortSignal.timeout(45000)]);
    let data;
@@ -372,7 +374,20 @@ export function setupMealCapture({searchFoods, addEntries, cloudAnalysis}) {
    status.textContent=data.items.length?(data.note||'Her öneri için uygun katalog kaydını seç.'):'Yiyecek belirlenemedi. Daha net bir fotoğraf dene veya besinleri elle ekle.';
    renderRows();
   } catch(error) {
-   if(ticket===generation&&!controller.signal.aborted)status.textContent=error.status===429?'Ücretsiz analiz kotası doldu. Daha sonra tekrar dene veya besinleri elle ekle.':error.name==='TimeoutError'?'Analiz zaman aşımına uğradı.':error.message;
+   if(ticket===generation&&!controller.signal.aborted){
+    const messages={
+     provider_access:'Google bu proje için analiz erişimine izin vermedi.',
+     provider_model:'Google analiz modeli şu anda erişilemiyor.',
+     no_result:'Fotoğraftan sonuç alınamadı. Daha net bir fotoğraf deneyebilirsin.',
+     size:'Fotoğraf fazla büyük. Daha küçük bir fotoğraf dene.',
+     quota:'Ücretsiz analiz kotası doldu. Daha sonra tekrar dene.'
+    };
+    status.textContent=messages[error.code]||(error.status===429?messages.quota:
+     error.status===401?'Oturum süresi doldu. Yeniden giriş yapıp dene.':
+     error.status===403?'Bu hesapta fotoğraf analiz yetkisi yok.':
+     error.name==='TimeoutError'||error.name==='AbortError'?'Analiz zaman aşımına uğradı. Tekrar dene.':
+     'Fotoğraf analizi tamamlanamadı. Tekrar dene veya besinleri elle ekle.');
+   }
   } finally {
    if(pending===controller){pending=null;updateAnalyze();}
   }

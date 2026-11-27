@@ -55,7 +55,7 @@ export default {fetch: async (request: Request) => {
  const headers = new Headers({
   'Access-Control-Allow-Headers':'authorization, apikey, content-type',
   'Access-Control-Allow-Methods':'POST, OPTIONS',
-  'Vary':'Origin','Cache-Control':'no-store'
+  'Vary':'Origin','Cache-Control':'no-store','X-Kalori-Analysis-Revision':'gemini-3.1-v2'
  });
  if (origin) headers.set('Access-Control-Allow-Origin', origin);
  const reply = (body:unknown, status=200) => Response.json(body, {status, headers});
@@ -75,18 +75,28 @@ export default {fetch: async (request: Request) => {
   const image = typeof input?.image === 'string' && input.image.match(/^data:image\/jpeg;base64,(\/9j\/[A-Za-z0-9+/]+={0,2})$/);
   if (!image) return reply({error:'image'},400);
   try {
-   const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',{
+   const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',{
     method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},signal:AbortSignal.timeout(30000),
     body:JSON.stringify({
      contents:[{role:'user',parts:[{text:prompt},{inlineData:{mimeType:'image/jpeg',data:image[1]}}]}],
-     generationConfig:{maxOutputTokens:1600,thinkingConfig:{thinkingBudget:0},responseMimeType:'application/json',responseJsonSchema:schema}
+     generationConfig:{maxOutputTokens:1600,thinkingConfig:{thinkingLevel:'MINIMAL'},responseMimeType:'application/json',responseJsonSchema:schema}
     })
    });
    if (response.status===429) return reply({error:'quota'},429);
-   if (!response.ok) return reply({error:'analysis'},502);
+   if (!response.ok) {
+    const failure = await response.json().catch(()=>null);
+    const status = String(failure?.error?.status ?? '');
+    console.warn('Gemini analysis rejected',response.status,/^[A-Z_]{1,40}$/.test(status)?status:'UNKNOWN');
+    if (response.status===403 || status==='FAILED_PRECONDITION') return reply({error:'provider_access'},424);
+    if (response.status===404) return reply({error:'provider_model'},424);
+    return reply({error:'analysis'},502);
+   }
    const data = await response.json();
    const content = data.candidates?.[0]?.content?.parts?.map((part:{text?:string})=>part.text ?? '').join('');
-   if (!content) return reply({error:'analysis'},502);
+   if (!content) {
+    console.warn('Gemini analysis returned no text');
+    return reply({error:'no_result'},422);
+   }
    return reply(parseMealAnalysis(JSON.parse(content)));
   } catch { return reply({error:'analysis'},502); }
  });
