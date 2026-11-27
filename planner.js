@@ -1,6 +1,6 @@
 import {calories,dateKey,total} from './core.js';
 import {meals,scaleEntries,validateCollection} from './diary.js?v=14';
-import {localFoods} from './food-search.js?v=7';
+import {loadUsdaFoods} from './food-search.js?v=15';
 
 const templates=[
  {name:'Menemen',servings:2,meal:'Kahvaltı',foods:[['171287','Yumurta',100],['170457','Domates',240],['170427','Yeşil biber',60],['171413','Zeytinyağı',12]]},
@@ -54,10 +54,10 @@ export function setupPlanner({getState,save,update,recordEntries,startTemplate,n
  date.value=dateKey(tomorrow);
  for(const meal of meals)form.elements.meal.add(new Option(meal,meal));
  let source;
- const catalog=()=>source??=fetch('./usda-foods.json').then(response=>{
-  if(!response.ok)throw Error('Besin kataloğu açılamadı.');
-  return response.json();
- }).then(data=>new Map(localFoods(data.foods).map(food=>[food.id.slice(5),food]))).catch(error=>{source=undefined;throw error;});
+ const catalog=()=>source??=loadUsdaFoods().then(foods=>{
+  const ids=new Set(templates.flatMap(template=>template.foods.map(([id])=>id)));
+  return new Map(foods.filter(food=>ids.has(food.id.slice(5))).map(food=>[food.id.slice(5),food]));
+ }).catch(error=>{source=undefined;throw error;});
  for(const template of templates){
   const button=document.createElement('button');
   button.type='button';

@@ -6,7 +6,7 @@ export function calculate(p) {
   const resting = 10*p.weight+6.25*p.height-5*p.age+(p.sex==='male'?5:-161);
   return Math.round(resting*p.activity);
 }
-export function total(entries) { return entries.reduce((s,e)=>s+e.kcal,0); }
+export function total(entries) { return entries.reduce((tenths,entry)=>tenths+Math.round(entry.kcal*10),0)/10; }
 export function calories(per100, grams) {
   if (!Number.isFinite(per100)||!Number.isFinite(grams)||per100<0||per100>1000||grams<=0||grams>10000) throw Error('Kalori 0–1000, miktar 0’dan büyük ve en fazla 10000 olmalı.');
   return Math.round(per100*grams/100*10)/10;

@@ -243,7 +243,7 @@ details form { margin: 10px 0; }
 .history-graph { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 6px; }
 .history-axis { height: var(--plot-height); display: flex; flex-direction: column; justify-content: space-between; color: var(--muted); font-size: .67rem; text-align: end; }
 .history-chart { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(32px,1fr); overflow-x: auto; overscroll-behavior-inline: contain; padding-bottom: 3px; }
-.history-chart.month { grid-auto-columns: minmax(38px,1fr); }
+.history-chart.month { grid-auto-columns: minmax(48px,1fr); }
 .history-day { min-width: 0; display: grid; justify-items: stretch; gap: 4px; padding: 0 0 4px; background: transparent; border: 0; border-radius: 8px; color: var(--muted); text-align: center; }
 .history-day[aria-pressed="true"] { color: var(--ink); background: var(--accent-soft); font-weight: 750; }
 .history-day:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
@@ -312,6 +312,7 @@ footer .creator-credit { margin-inline-start: auto; }
   .overview { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
   .dashboard-tip { grid-column: 1 / -1; }
   #toast { bottom: calc(66px + env(safe-area-inset-bottom)); }
+  .history-toolbar button, .food-result, .pane-nav button { min-height: 44px; }
   input, select { font-size: 16px; }
 }
 @media (max-width: 430px) {

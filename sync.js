@@ -104,7 +104,8 @@ export function setupSync({getState,applyState}){
  }
  async function upload(payload,hash,revision){
   const next=await authenticated(rpc,{method:'POST',body:{expected_revision:revision,payload}});
-  if(!Number.isSafeInteger(next)||next<=revision)throw Error('Hesaptaki kayıtlar bu sırada değişti. Yeniden eşitle.');
+  if(next===null)return null;
+  if(!Number.isSafeInteger(next)||next<=revision)throw Error('Sunucu geçersiz eşitleme sürümü döndürdü.');
   return {revision:next,digest:hash};
  }
  function schedule(){
@@ -113,9 +114,10 @@ export function setupSync({getState,applyState}){
   if(busy){queued=true;return;}
   timer=setTimeout(()=>run(),1000);
  }
- async function run(decision){
+ async function run(decision,retry=true){
   if(!connection||busy)return;
   if(choice&&!decision){tell('Eşitlemeye devam etmek için hangi kayıtları kullanacağını seç.');return;}
+  clearTimeout(timer);
   const pending=choice;
   choice=undefined;
   busy=true;
@@ -140,8 +142,13 @@ export function setupSync({getState,applyState}){
     if(getState()!==before){queued=true;return;}
     applyState(remote.payload);
    }
-   connection.base=action==='upload'?await upload(payload,hash,remote?.revision??0):
+   const base=action==='upload'?await upload(payload,hash,remote?.revision??0):
     {revision:remote.revision,digest:remote.digest};
+   if(!base){
+    if(retry){queued=false;timer=setTimeout(()=>run(undefined,false),0);return;}
+    throw Error('Hesaptaki kayıtlar bu sırada değişti. Yeniden eşitle.');
+   }
+   connection.base=base;
    persist();
    tell('Son eşitleme '+new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}));
   }catch(error){

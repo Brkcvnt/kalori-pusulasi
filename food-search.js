@@ -24,16 +24,32 @@ export function productFood(p){
  return {id:'off:'+code,code,name,macros,extras,measures,brand:Array.isArray(p.brands)?p.brands.join(', '):String(p.brands||''),per100:kcal!==null&&kcal>=0&&kcal<=1000?Math.round(kcal*10)/10:null,source:'Open Food Facts',url:'https://world.openfoodfacts.org/product/'+code,unit,original:''};
 }
 export function localFoods(rows){return rows.map(([id,name,per100,original,macros,extras,measures])=>({id:'usda:'+id,name,per100,original,macros,extras:extras??undefined,measures,brand:'',unit:'g',source:'USDA',url:'https://fdc.nal.usda.gov/food-details/'+id+'/nutrients'}));}
+let usdaCatalog;
+export function loadUsdaFoods(){
+ return usdaCatalog??=fetch('./usda-foods.json').then(response=>{
+  if(!response.ok)throw Error('Besin kataloğu açılamadı.');
+  return response.json();
+ }).then(data=>localFoods(data.foods)).catch(error=>{usdaCatalog=undefined;throw error;});
+}
 // Catalog arrays are replaced after loading; normalized fields are reused while typing.
-const indexes=new WeakMap();
+const indexes=new WeakMap(),searchFields=new WeakMap();
 export function searchFoods(foods,query,limit=30){
+ const q=normalize(query);
+ if(q.length<2||limit<=0)return [];
+ const tokens=q.split(' '),barcode=query.trim();
  let index=indexes.get(foods);
  if(!index){
-  index=foods.map((food,order)=>{const name=normalize(food.name);return {food,order,name,all:name+' '+normalize(food.brand)+' '+normalize(food.original)};});
+  index=foods.map((food,order)=>{
+   let fields=searchFields.get(food);
+   if(!fields){
+    const name=normalize(food.name);
+    fields={name,all:name+' '+normalize(food.brand)+' '+normalize(food.original)};
+    searchFields.set(food,fields);
+   }
+   return {food,order,...fields};
+  });
   indexes.set(foods,index);
  }
- const q=normalize(query),tokens=q.split(' ').filter(Boolean),barcode=query.trim();
- if(q.length<2)return [];
  // Keep only the best matches, avoiding a full result sort on broad queries.
  const best=[];
  for(const row of index){

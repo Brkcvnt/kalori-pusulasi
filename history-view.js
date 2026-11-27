@@ -5,7 +5,7 @@ import {dateOffset,periodSummary} from './insights.js?v=7';
 const shortDate=new Intl.DateTimeFormat('tr-TR',{day:'numeric',month:'short'});
 const longDate=new Intl.DateTimeFormat('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 const displayDate=key=>shortDate.format(new Date(key+'T12:00:00'));
-const intervalLabel=(start,end)=>displayDate(start)+' – '+displayDate(end)+' '+end.slice(0,4);
+const intervalLabel=(start,end)=>displayDate(start)+(start.slice(0,4)!==end.slice(0,4)?' '+start.slice(0,4):'')+' – '+displayDate(end)+' '+end.slice(0,4);
 
 export function chartScale(days){
  const max=Math.max(1000,...days.map(day=>Math.max(day.calories??0,day.target??0)));
@@ -134,7 +134,7 @@ export function setupHistory({getDays,getDiaryDate,openDiary,exportRange,num}){
    button.querySelector('.history-energy').textContent=day.calories===null?'—':num(day.calories);
    button.setAttribute('aria-label',longDate.format(day.date)+' · '+(day.calories===null?'Kayıt yok':kcal(day.calories))
      +' · '+(day.target===null?'Hedef yok':'Hedef '+kcal(day.target)));
-   button.onclick=()=>showDay(index);
+   button.onclick=()=>showDay(index,{focus:true});
    return button;
   });
   chart.replaceChildren(...buttons);

@@ -55,3 +55,10 @@ test('repeated typing reuses catalog fields; a replacement catalog builds a fres
  assert.equal(reads,initialReads);
  assert.deepEqual(searchFoods([{id:'new',name:'Yoğurt'}],'sutlu'),[]);
 });
+
+test('Boş ve kısa sorgular katalog alanlarını okumaz',()=>{
+ const foods=[{get name(){throw Error('Katalog gereksiz yere indekslendi.');}}];
+ assert.deepEqual(searchFoods(foods,''),[]);
+ assert.deepEqual(searchFoods(foods,'e'),[]);
+ assert.deepEqual(searchFoods(foods,'elma',0),[]);
+});

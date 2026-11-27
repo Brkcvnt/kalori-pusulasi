@@ -1,9 +1,9 @@
-import {localFoods,productFood,searchFoods,searchUrl,fallbackSearchUrl,responseFoods,normalize} from './food-search.js?v=7';
+import {loadUsdaFoods,productFood,searchFoods,searchUrl,fallbackSearchUrl,responseFoods,normalize} from './food-search.js?v=15';
 
 export function setupFoodPicker({form,onChange,onError,getQuickFoods}){
  const input=form.elements.name,per100=form.elements.per100;
  const results=document.querySelector('#food-results'),status=document.querySelector('#food-search-status'),detail=document.querySelector('#selected-food'),online=document.querySelector('#search-online');
- let catalog=[],selected=null,controller,revision=0,lastRequest=0,lastQuery='',lastResults=[],searchTimer,active=-1;
+ let catalog=[],bundled=[],selected=null,controller,revision=0,lastRequest=0,lastQuery='',lastResults=[],searchTimer,active=-1;
  const addButtons=['#add-food','#add-ingredient'].map(id=>document.querySelector(id));
  function setAdding(enabled){for(const button of addButtons)button.disabled=!enabled;}
  const setStatus=text=>status.textContent=text;
@@ -33,6 +33,7 @@ export function setupFoodPicker({form,onChange,onError,getQuickFoods}){
     if(live&&live.id!==food.id)throw Error('Product identity mismatch');
     if(!live||live.per100===null){clear();detail.hidden=true;setStatus('Bu ürünün güncel kaynağında kalori bilgisi bulunamadı. Başka bir ürün seç.');return;}
     selected=live;input.value=live.name.slice(0,80);per100.value=live.per100;strong.textContent=live.name;p.textContent=(live.brand?live.brand+' · ':'')+live.per100.toLocaleString('tr-TR')+' kcal / 100 '+live.unit;
+    document.querySelector('#amount-label').textContent='Miktar ('+live.unit+')';
     setStatus('Güncel kalori internetten alındı. Yediğin miktarı gir.');onChange(selected);
    }catch{if(id===revision)setStatus('Güncel etikete erişilemedi. Cihazdaki kaynak değeri kullanılıyor; ambalajdaki ürünle eşleştiğini kontrol et.');}
    finally{clearTimeout(timeout);if(id===revision&&selected)setAdding(true);}
@@ -51,6 +52,7 @@ export function setupFoodPicker({form,onChange,onError,getQuickFoods}){
  function searchLocal(){
   const query=input.value.trim();const found=searchFoods(catalog,query,12);
   show(found);setStatus(query.length<2?'En az 2 harf yaz veya barkod gir.':found.length?found.length+' sonuç gösteriliyor. Marka ve hazırlanışına göre bir besin seç; farklı ürün için İnternette ara’ya dokun.':'Katalogda bulunamadı. İnternette ara’yı dene.');
+  return found.length;
  }
  input.addEventListener('input',e=>{cancelSearch();clear();detail.hidden=true;closeResults();if(!e.isComposing)scheduleSearch();});
  input.addEventListener('compositionend',scheduleSearch);
@@ -85,17 +87,23 @@ export function setupFoodPicker({form,onChange,onError,getQuickFoods}){
    lastQuery=query;lastResults=foods;show(foods);openResults();
    setStatus(foods.length?foods.length+' çevrimiçi sonuç. Kalorisi bulunmayan ürünler seçilemez.':'Ürün bulunamadı. Marka + ürün adıyla veya barkodla tekrar dene.');
   }catch(err){
-   if(id!==revision)return;searchLocal();openResults();const localCount=searchFoods(catalog,query).length;
+   if(id!==revision)return;const localCount=searchLocal();openResults();
    setStatus((err.name==='AbortError'?'Arama zaman aşımına uğradı.':err.message==='Failed to fetch'?'Çevrimiçi arama servisine erişilemiyor.':err.message)+' '+(localCount?'Aşağıdaki sonuçlar cihazdaki kaynak kataloğundan gösteriliyor.':'Bağlantını kontrol et veya daha genel bir besin adı dene.'));
   }finally{clearTimeout(timeout);online.disabled=false;}
  }
  online.onclick=searchOnline;
  // Only the selected public nutrition records are cached; diary and profile data are never sent.
  let remembered=[];try{const saved=JSON.parse(localStorage.getItem('kalori-pusulasi-food-cache')||'[]');remembered=saved.filter(f=>f.source==='Open Food Facts'&&/^off:\d{4,14}$/.test(f.id)&&typeof f.name==='string'&&Number.isFinite(f.per100)&&f.per100>=0&&f.per100<=1000).slice(-100).map(f=>({...f,url:'https://world.openfoodfacts.org/product/'+f.id.slice(4)}));}catch{}
- catalog.push(...remembered);
- Promise.allSettled([fetch('./usda-foods.json').then(r=>{if(!r.ok)throw Error();return r.json();}).then(d=>localFoods(d.foods)),fetch('./packaged-foods.json').then(r=>{if(!r.ok)throw Error();return r.json();}).then(d=>d.products.map(productFood).filter(Boolean))]).then(parts=>{
-  const unique=new Map(catalog.map(f=>[f.id,f]));for(const p of parts)if(p.status==='fulfilled')for(const f of p.value)if(!unique.has(f.id))unique.set(f.id,f);
-  catalog=[...unique.values()];searchFoods(catalog,'');document.querySelector('#catalog-count').textContent=catalog.length.toLocaleString('tr-TR')+' besin ve ürün cihaz kataloğunda';
+ function refreshCatalog(){
+  const unique=new Map(bundled.map(food=>[food.id,food]));
+  for(const food of remembered)unique.set(food.id,food);
+  catalog=[...unique.values()];
+  document.querySelector('#catalog-count').textContent=catalog.length.toLocaleString('tr-TR')+' besin ve ürün cihaz kataloğunda';
+ }
+ refreshCatalog();
+ Promise.allSettled([loadUsdaFoods(),fetch('./packaged-foods.json').then(r=>{if(!r.ok)throw Error();return r.json();}).then(d=>d.products.map(productFood).filter(Boolean))]).then(parts=>{
+  bundled=parts.flatMap(part=>part.status==='fulfilled'?part.value:[]);
+  refreshCatalog();
   if(!selected&&document.activeElement===input)scheduleSearch();if(parts.some(p=>p.status==='rejected'))onError('Besin kataloğunun bir bölümü yüklenemedi. İnternet aramasını kullanabilir veya sayfayı yenileyebilirsin.');
  });
  clear();
@@ -108,5 +116,5 @@ export function setupFoodPicker({form,onChange,onError,getQuickFoods}){
    else searchOnline();
   },
   searchLocalFoods(query){return query.trim().length>=2?searchFoods(catalog,query,12).filter(food=>food.per100!==null):[];},
-  getSelected(){return selected;},remember(){if(selected?.source==='Open Food Facts'){remembered=[...remembered.filter(f=>f.id!==selected.id),selected].slice(-100);try{localStorage.setItem('kalori-pusulasi-food-cache',JSON.stringify(remembered));}catch{}}},reset(){cancelSearch();closeResults();clear();detail.hidden=true;results.replaceChildren();setStatus('Yeni besin için ad veya barkod yaz.');}};
+  getSelected(){return selected;},remember(){if(selected?.source==='Open Food Facts'){remembered=[...remembered.filter(f=>f.id!==selected.id),selected].slice(-100);refreshCatalog();try{localStorage.setItem('kalori-pusulasi-food-cache',JSON.stringify(remembered));}catch{}}},reset(){cancelSearch();closeResults();clear();detail.hidden=true;results.replaceChildren();setStatus('Yeni besin için ad veya barkod yaz.');}};
 }
