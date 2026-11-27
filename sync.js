@@ -37,6 +37,8 @@ async function digest(value){
 export function setupSync({getState,applyState}){
  const $=selector=>document.querySelector(selector);
  const form=$('#sync-login'),status=$('#sync-status'),conflict=$('#sync-conflict');
+ form.elements.project.value ||= 'https://qzhvjadpncqnuxbsroyj.supabase.co';
+ form.elements.publicKey.value ||= 'sb_publishable_TTpHceCD1qqShPE32xzNaQ_YTQuuHuw';
  let connection,timer,busy=false,queued=false,choice,refreshPending;
  try{
   const saved=JSON.parse(localStorage.getItem(key));

@@ -299,7 +299,8 @@ export function setupMealCapture({searchFoods, addEntries, cloudAnalysis}) {
    }catch{}
    if(ticket!==generation||!dialog.open)return;
    if(!selectedService)try{
-    if((await cloudAnalysis({check:true},AbortSignal.timeout(8000))).available===true)selectedService='cloud';
+    const health=await cloudAnalysis({check:true},AbortSignal.timeout(8000));
+    if(health.available===true&&health.provider==='Gemini')selectedService='cloud';
    }catch(error){
     if(error.status===401)notice='Otomatik analiz için Profil → Cihazlar arasında eşitle bölümünden hesabına giriş yap.';
     else if(error.status===403)notice='Bu hesapta otomatik analiz yetkisi yok.';
@@ -309,7 +310,7 @@ export function setupMealCapture({searchFoods, addEntries, cloudAnalysis}) {
    service=selectedService;
    providerNotice.hidden=!service;
    providerNotice.textContent=service==='cloud'?'Analiz et’e bastığında fotoğraf Google Gemini’ye gönderilir. Ücretsiz kotada Google fotoğrafları ürünlerini geliştirmek için kullanabilir.':'Analiz et’e bastığında fotoğraf OpenAI’a gönderilir.';
-   if(!service&&!video.srcObject&&cameraPanel.hidden&&!photo&&!status.textContent)status.textContent=notice;
+   if(!service&&cameraPanel.hidden&&(!status.textContent||photo))status.textContent=notice;
    updateAnalyze();
   }
  }
