@@ -1,6 +1,6 @@
 import {calculate,total,calories,dateKey,entryCalories} from './core.js';
 import {setupFoodPicker} from './food-picker.js?v=15';
-import {setupMealCapture} from './meal-capture.js?v=14';
+import {setupMealCapture} from './meal-capture.js?v=16';
 import {meals,nutrients,validateEntry,validateCollection,scaleEntries,macroTotals} from './diary.js?v=14';
 import {setupBarcodeScanner} from './barcode.js?v=7';
 import {extraNutrients,toBaseAmount,dateOffset,diaryCsv,datedMeal,withAmount} from './insights.js?v=14';

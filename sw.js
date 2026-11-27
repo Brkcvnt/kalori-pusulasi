@@ -1,5 +1,5 @@
-const CACHE='kalori-pusulasi-v15';
-const ASSETS=['./','./index.html','./style.css?v=15','./theme.js?v=11','./app.js?v=15','./history-view.js?v=15','./navigation.js?v=13','./planner.js?v=15','./core.js','./insights.js?v=14','./insights.js?v=7','./sync.js?v=15','./reminder.js?v=7','./diary.js?v=14','./diary.js?v=7','./barcode.js?v=7','./zxing-browser-0.1.5.min.js','./food-picker.js?v=15','./food-search.js?v=15','./meal-capture.js?v=14','./fast-food-tr.json','./usda-foods.json','./packaged-foods.json','./manifest.webmanifest?v=11','./icon.svg?v=11','./icon-dark.svg?v=11','./icon-192.png?v=11','./icon-512.png?v=11'];
+const CACHE='kalori-pusulasi-v16';
+const ASSETS=['./','./index.html','./style.css?v=16','./theme.js?v=11','./app.js?v=16','./history-view.js?v=15','./navigation.js?v=13','./planner.js?v=15','./core.js','./insights.js?v=14','./insights.js?v=7','./sync.js?v=15','./reminder.js?v=7','./diary.js?v=14','./diary.js?v=7','./barcode.js?v=7','./zxing-browser-0.1.5.min.js','./food-picker.js?v=15','./food-search.js?v=15','./meal-capture.js?v=16','./fast-food-tr.json','./usda-foods.json','./packaged-foods.json','./manifest.webmanifest?v=11','./icon.svg?v=11','./icon-dark.svg?v=11','./icon-192.png?v=11','./icon-512.png?v=11'];
 const urls=new Set(ASSETS.map(path=>new URL(path,self.registration.scope).href));
 const shell=new URL('./index.html',self.registration.scope).href;
 

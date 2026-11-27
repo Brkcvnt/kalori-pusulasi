@@ -337,3 +337,5 @@ footer .creator-credit { margin-inline-start: auto; }
 }
 #capture-results button { text-align: start; }
 #capture-items select, #capture-items button { width: 100%; }
+
+#capture-camera-video { display:block; width:100%; max-height:18rem; object-fit:contain; background:#111; border-radius:.65rem; margin-block:.5rem; }

@@ -10,21 +10,25 @@ function element(tag, text) {
  return node;
 }
 
+function encodePhoto(source,width,height) {
+ const scale=Math.min(1,1280/Math.max(width,height));
+ const canvas=element('canvas');
+ canvas.width=Math.max(1,Math.round(width*scale));
+ canvas.height=Math.max(1,Math.round(height*scale));
+ const context=canvas.getContext('2d');
+ context.fillStyle='white';
+ context.fillRect(0,0,canvas.width,canvas.height);
+ context.drawImage(source,0,0,canvas.width,canvas.height);
+ return canvas.toDataURL('image/jpeg',.82);
+}
+
 function prepareImage(file) {
  return new Promise((resolve, reject) => {
   const url = URL.createObjectURL(file);
   const image = new Image();
   image.onload = () => {
    try {
-    const scale = Math.min(1, 1280 / Math.max(image.naturalWidth, image.naturalHeight));
-    const canvas = element('canvas');
-    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-    const context = canvas.getContext('2d');
-    context.fillStyle = 'white';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    resolve(canvas.toDataURL('image/jpeg', .82));
+    resolve(encodePhoto(image,image.naturalWidth,image.naturalHeight));
    } catch { reject(Error('Fotoğraf hazırlanamadı.')); }
    finally { URL.revokeObjectURL(url); }
   };
@@ -46,6 +50,11 @@ export function setupMealCapture({searchFoods, addEntries}) {
  const file = get('capture-photo');
  const image = get('capture-preview');
  const analyze = get('capture-analyze');
+ const video = get('capture-camera-video');
+ const cameraPanel = get('capture-camera-panel');
+ const cameraButton = get('capture-camera-start');
+ const shutter = get('capture-camera-shutter');
+ let cameraSession=0;
  const items = get('capture-items');
  const form = get('capture-form');
  const save = get('capture-save');
@@ -191,7 +200,62 @@ export function setupMealCapture({searchFoods, addEntries}) {
  function updateAnalyze() {
   analyze.disabled=!photo||!service||Boolean(pending);
  }
- async function open(photoMode) {
+ function stopCamera() {
+  cameraSession++;
+  video.srcObject?.getTracks().forEach(track=>track.stop());
+  video.srcObject=null;
+  cameraPanel.hidden=true;
+  cameraButton.disabled=false;
+  shutter.disabled=true;
+ }
+ function showPhoto(prepared) {
+  pending?.abort();
+  pending=null;
+  rows=rows.filter(row=>!row.guess);
+  renderRows();
+  photo=prepared;
+  image.src=photo;
+  image.hidden=false;
+  status.textContent=service?'Fotoğraf hazır. Analiz edebilir veya besinleri elle ekleyebilirsin.':'Fotoğraf hazır. Besinleri arayıp tek tek ekle.';
+  updateAnalyze();
+ }
+ async function startCamera() {
+  stopCamera();
+  const session=cameraSession;
+  cameraPanel.hidden=false;
+  cameraButton.disabled=true;
+  status.textContent='Kamera açılıyor…';
+  try {
+   if(!navigator.mediaDevices?.getUserMedia)throw Error();
+   const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'}}});
+   if(session!==cameraSession||!dialog.open){
+    stream.getTracks().forEach(track=>track.stop());
+    return;
+   }
+   video.srcObject=stream;
+   await video.play();
+   if(session!==cameraSession)return;
+   shutter.disabled=!video.videoWidth;
+   status.textContent='Yemeği kadraja al ve Fotoğraf çek’e dokun.';
+  } catch(error) {
+   if(session!==cameraSession)return;
+   stopCamera();
+   status.textContent=error.name==='NotAllowedError'?'Kamera izni verilmedi. İzin ayarlarını kontrol et veya galeriden fotoğraf seç.':'Kamera açılamadı. Galeriden fotoğraf seçebilirsin.';
+  }
+ }
+ video.addEventListener('loadeddata',()=>{shutter.disabled=!video.srcObject||!video.videoWidth;});
+ cameraButton.onclick=startCamera;
+ get('capture-camera-stop').onclick=()=>{stopCamera();status.textContent='Kamera kapatıldı.';};
+ shutter.onclick=()=>{
+  if(!video.srcObject||!video.videoWidth)return;
+  try {
+   const prepared=encodePhoto(video,video.videoWidth,video.videoHeight);
+   stopCamera();
+   file.value='';
+   showPhoto(prepared);
+  } catch {status.textContent='Fotoğraf çekilemedi. Tekrar dene.';}
+ };
+ async function open(photoMode, cameraMode=false) {
   const ticket=++generation;
   isPhoto=photoMode;
   rows=[];
@@ -211,6 +275,7 @@ export function setupMealCapture({searchFoods, addEntries}) {
   renderResults();
   renderRows();
   dialog.showModal();
+  if(cameraMode)startCamera();
   if (!catalog) loadCatalog().then(data=>{
    catalog=data;
    if (!dialog.open || ticket!==generation) return;
@@ -232,15 +297,17 @@ export function setupMealCapture({searchFoods, addEntries}) {
    } catch {
     if(ticket!==generation||!dialog.open)return;
    }
-   if(!service) status.textContent='Bu sürümde otomatik analiz etkin değil. Fotoğrafa bakıp besinleri aramadan ekleyebilirsin.';
+   if(!service&&!video.srcObject&&cameraPanel.hidden&&!photo&&!status.textContent) status.textContent='Bu sürümde otomatik analiz etkin değil. Fotoğrafa bakıp besinleri aramadan ekleyebilirsin.';
    updateAnalyze();
   }
  }
  get('open-photo-meal').onclick=()=>open(true);
+ get('open-camera-meal').onclick=()=>open(true,true);
  get('open-fast-food').onclick=()=>open(false);
  get('capture-close').onclick=()=>dialog.close();
  dialog.addEventListener('close',()=>{
   generation++;
+  stopCamera();
   pending?.abort();
   pending=null;
   photo=null;
@@ -250,6 +317,7 @@ export function setupMealCapture({searchFoods, addEntries}) {
  });
  search.oninput=brand.onchange=renderResults;
  file.onchange=async()=>{
+  stopCamera();
   const chosen=file.files[0];
   const ticket=generation;
   pending?.abort();
@@ -262,10 +330,7 @@ export function setupMealCapture({searchFoods, addEntries}) {
    if(chosen.size>25*1024*1024)throw Error('25 MB altında bir fotoğraf seç.');
    const prepared=await prepareImage(chosen);
    if(ticket!==generation||file.files[0]!==chosen)return;
-   photo=prepared;
-   image.src=photo;
-   image.hidden=false;
-   status.textContent=service?'Fotoğraf hazır. Analiz edebilir veya besinleri elle ekleyebilirsin.':'Fotoğraf hazır. Besinleri arayıp tek tek ekle.';
+   showPhoto(prepared);
   } catch(error) {
    if(ticket===generation && file.files[0]===chosen)status.textContent=error.message;
   }
