@@ -1,10 +1,10 @@
 import {calculate,total,calories,dateKey,entryCalories} from './core.js';
 import {setupFoodPicker} from './food-picker.js?v=15';
-import {setupMealCapture} from './meal-capture.js?v=16';
+import {setupMealCapture} from './meal-capture.js?v=17';
 import {meals,nutrients,validateEntry,validateCollection,scaleEntries,macroTotals} from './diary.js?v=14';
 import {setupBarcodeScanner} from './barcode.js?v=7';
 import {extraNutrients,toBaseAmount,dateOffset,diaryCsv,datedMeal,withAmount} from './insights.js?v=14';
-import {setupSync} from './sync.js?v=15';
+import {setupSync} from './sync.js?v=17';
 import {setupReminder} from './reminder.js?v=7';
 import {setupNavigation} from './navigation.js?v=13';
 import {setupPlanner,validatePlans} from './planner.js?v=15';
@@ -551,6 +551,7 @@ function startTemplate(item){
  collectionForm.elements.name.focus();
 }
 setupMealCapture({
+ cloudAnalysis:(body,signal)=>sync.photoAnalysis(body,signal),
  searchFoods:query=>picker.searchLocalFoods(query),
  addEntries:entries=>{
   const date=$('#day').value;
@@ -573,10 +574,11 @@ const goTo=setupNavigation(page=>{
  if(page==='history')renderHistory();
  if(page==='plan')renderPlans();
 });
-syncSchedule=setupSync({getState:()=>{
+const sync=setupSync({getState:()=>{
  if(unreadableStorage)throw Error('Yerel kayıtlar okunamadığı için eşitleme durdu.');
  return JSON.stringify(state);
 },applyState:applySyncedState});
+syncSchedule=sync.schedule;
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){$('#day').max=dateKey();render();}});render();
 
 const nativeUpdates=window.AndroidBackup;

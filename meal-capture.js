@@ -40,7 +40,7 @@ function prepareImage(file) {
  });
 }
 
-export function setupMealCapture({searchFoods, addEntries}) {
+export function setupMealCapture({searchFoods, addEntries, cloudAnalysis}) {
  const get = id => document.getElementById(id);
  const dialog = get('meal-capture');
  const brand = get('capture-brand');
@@ -289,15 +289,23 @@ export function setupMealCapture({searchFoods, addEntries}) {
    brand.replaceChildren(new Option('Tüm markalar',''),...Object.keys(catalog.sources).map(name=>new Option(name,name)));
   }
   if (isPhoto) {
+   let notice='Fotoğraf analizi şu anda kullanılamıyor. Besinleri elle ekleyebilirsin.';
+   let selectedService=false;
    try {
-    const response=await fetch(endpoint,{cache:'no-store',signal:AbortSignal.timeout(5000)});
-    const ready=response.ok&&(await response.json()).available===true;
-    if(ticket!==generation||!dialog.open)return;
-    service=ready;
-   } catch {
-    if(ticket!==generation||!dialog.open)return;
+    const response=await fetch(endpoint,{cache:'no-store',signal:AbortSignal.timeout(4000)});
+    if(response.ok&&(await response.json()).available===true)selectedService='local';
+   }catch{}
+   if(ticket!==generation||!dialog.open)return;
+   if(!selectedService)try{
+    if((await cloudAnalysis({check:true},AbortSignal.timeout(8000))).available===true)selectedService='cloud';
+   }catch(error){
+    if(error.status===401)notice='Otomatik analiz için Profil → Cihazlar arasında eşitle bölümünden hesabına giriş yap.';
+    else if(error.status===403)notice='Bu hesapta otomatik analiz yetkisi yok.';
+    else if(error.status===503)notice='Fotoğraf analiz servisi henüz yapılandırılmadı.';
    }
-   if(!service&&!video.srcObject&&cameraPanel.hidden&&!photo&&!status.textContent) status.textContent='Bu sürümde otomatik analiz etkin değil. Fotoğrafa bakıp besinleri aramadan ekleyebilirsin.';
+   if(ticket!==generation||!dialog.open)return;
+   service=selectedService;
+   if(!service&&!video.srcObject&&cameraPanel.hidden&&!photo&&!status.textContent)status.textContent=notice;
    updateAnalyze();
   }
  }
@@ -344,10 +352,15 @@ export function setupMealCapture({searchFoods, addEntries}) {
   updateAnalyze();
   status.textContent='Fotoğraf inceleniyor…';
   try {
-   const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({image:photo}),signal:AbortSignal.any([controller.signal,AbortSignal.timeout(45000)])});
-   if(!response.ok)throw Error('Analiz tamamlanamadı. Tekrar dene veya besinleri elle ekle.');
-   const data=await response.json();
+   const signal=AbortSignal.any([controller.signal,AbortSignal.timeout(45000)]);
+   let data;
+   if(service==='cloud')data=await cloudAnalysis({image:photo},signal);
+   else{
+    const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({image:photo}),signal});
+    if(!response.ok)throw Error('Analiz tamamlanamadı. Tekrar dene veya besinleri elle ekle.');
+    data=await response.json();
+   }
    if(ticket!==generation||controller.signal.aborted)return;
    rows=rows.filter(row=>!row.guess);
    rows.push(...data.items.map(guess=>({guess,title:guess.name,query:guess.name,entry:null,amount:''})));

@@ -37,7 +37,7 @@ async function digest(value){
 export function setupSync({getState,applyState}){
  const $=selector=>document.querySelector(selector);
  const form=$('#sync-login'),status=$('#sync-status'),conflict=$('#sync-conflict');
- let connection,timer,busy=false,queued=false,choice;
+ let connection,timer,busy=false,queued=false,choice,refreshPending;
  try{
   const saved=JSON.parse(localStorage.getItem(key));
   if(saved?.access&&saved.refresh){
@@ -56,16 +56,16 @@ export function setupSync({getState,applyState}){
  function configureNative(){
   window.AndroidBackup?.setSyncHost?.(connection?new URL(connection.project).hostname:'');
  }
- async function request(config,path,{method='GET',body,token}={}){
+ async function request(config,path,{method='GET',body,token,timeoutMs=15000,signal}={}){
   const headers={apikey:config.publicKey,Accept:'application/json'};
   if(token)headers.Authorization='Bearer '+token;
   if(body!==undefined)headers['Content-Type']='application/json';
   const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),15000);
+  const timeout=setTimeout(()=>controller.abort(),timeoutMs);
   try{
    const response=await fetch(config.project+path,{
     method,headers,body:body===undefined?undefined:JSON.stringify(body),
-    cache:'no-store',credentials:'omit',redirect:'error',signal:controller.signal,referrerPolicy:'no-referrer'
+    cache:'no-store',credentials:'omit',redirect:'error',signal:signal?AbortSignal.any([signal,controller.signal]):controller.signal,referrerPolicy:'no-referrer'
    });
    if(!response.ok){
     const error=Error('Sunucu isteği tamamlanamadı.');
@@ -80,12 +80,19 @@ export function setupSync({getState,applyState}){
   return {access:result.access_token,refresh:result.refresh_token,user:result.user.id,
    expires:Date.now()+Number(result.expires_in||3600)*1000};
  }
- async function refresh(){
-  const next=session(await request(connection,'/auth/v1/token?grant_type=refresh_token',
-   {method:'POST',body:{refresh_token:connection.refresh}}));
-  if(next.user!==connection.user)throw Error('Hesap doğrulanamadı.');
-  Object.assign(connection,next);
-  persist();
+ function refresh(){
+  const active=connection;
+  if(!active)throw Error('Önce hesabına giriş yap.');
+  if(refreshPending?.connection===active)return refreshPending.promise;
+  const promise=request(active,'/auth/v1/token?grant_type=refresh_token',
+   {method:'POST',body:{refresh_token:active.refresh}}).then(result=>{
+    const next=session(result);
+    if(connection!==active||next.user!==active.user)throw Error('Hesap doğrulanamadı.');
+    Object.assign(active,next);
+    persist();
+   }).finally(()=>{if(refreshPending?.promise===promise)refreshPending=undefined;});
+  refreshPending={connection:active,promise};
+  return promise;
  }
  async function authenticated(path,options={}){
   if(connection.expires<Date.now()+60000)await refresh();
@@ -204,6 +211,12 @@ export function setupSync({getState,applyState}){
  configureNative();
  setControls();
  schedule();
- return schedule;
+ return {
+  schedule,
+  async photoAnalysis(body, signal){
+   if(!connection){const error=Error('Fotoğraf analizi için Profil → Cihazlar arasında eşitle bölümünden hesabına giriş yap.');error.status=401;throw error;}
+   return authenticated('/functions/v1/kalori-meal-photo',{method:'POST',body,timeoutMs:38000,signal});
+  }
+ };
 }
 
